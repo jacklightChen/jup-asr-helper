@@ -4,12 +4,12 @@ import type { Language, MessageKey, MessageValues } from './i18n.ts';
 import type { DonationAmount, DonationReceipt } from './donation.ts';
 import { loadDonationHistory, formatHistorySol } from './donation-history.ts';
 import type { DonationHistory } from './donation-history.ts';
-import { DONATION_ADDRESS, prepareDonation, verifyDonationSigned, submitDonation, donationStatus } from './donation.ts';
+import { DONATION_ADDRESS, prepareDonation, verifyDonationSigned, checkDonationNetwork, submitDonation, donationStatus } from './donation.ts';
 import { getWallets } from '@wallet-standard/app';
 import { PublicKey } from '@solana/web3.js';
 import { inspectPrepared, verifySignedTransaction, sameBytes, CURRENT_CAMPAIGN } from './transaction.ts';
 import { STORAGE_KEY, chooseLanguage, getLanguage, getLocale, setLanguage, translate as t, LocalizedError, localizedErrorMessage } from './i18n.ts';
-import { supportedWallets, walletBrand, selectWallet, mainnetChain, WALLET_CATALOG } from './wallets.ts';
+import { supportedWallets, walletBrand, selectWallet, mainnetChain, WALLET_CATALOG, preferOkxProvider, accountsInclude, donationVersion } from './wallets.ts';
 import { createPhantomWallet, createInjectedWallet } from './phantom.ts';
 
 const API = 'https://datapi.jup.ag/rewards/v1/campaigns/asr-2026-q3';
@@ -112,7 +112,7 @@ function injectedWallet(name: string, provider: InjectedProvider | null | undefi
   return wallet;
 }
 function detectedWallets() {
-  const wallets = supportedWallets(registry.get());
+  let wallets = supportedWallets(registry.get());
   const provider = window.phantom?.solana;
   if (provider !== phantomProvider) { phantomProvider = provider; phantomWallet = createPhantomWallet(provider); }
   if (phantomWallet && !wallets.some(wallet => walletBrand(wallet) === 'phantom')) wallets.push(phantomWallet);
@@ -125,7 +125,8 @@ function detectedWallets() {
   ];
   for (const [name, provider] of injected) {
     const wallet = injectedWallet(name, provider);
-    if (wallet && !wallets.some(item => walletBrand(item) === walletBrand(wallet))) wallets.push(wallet);
+    if (wallet && walletBrand(wallet) === 'okx') wallets = preferOkxProvider(wallets, wallet);
+    else if (wallet && !wallets.some(item => walletBrand(item) === walletBrand(wallet))) wallets.push(wallet);
   }
   return wallets;
 }
@@ -297,10 +298,9 @@ async function connect() {
   }));
   $('account-choice-wrap').hidden = available.length < 2;
   if (wallet.features['standard:events']) {
-    state.unsubscribe = wallet.features['standard:events'].on('change', () => {
+    state.unsubscribe = wallet.features['standard:events'].on('change', change => {
       if (state.wallet !== wallet) return;
-      const stillAvailable = wallet.accounts.some(account => account.address === state.account?.address &&
-        mainnetChain(account) && account.features.includes('solana:signTransaction'));
+      const stillAvailable = state.account && accountsInclude(change.accounts ?? wallet.accounts, state.account);
       if (!stillAvailable) {
         clearAccount('allocationChanged');
         showStatus('statusAccountChanged', 'reconnectPrepare');
@@ -349,6 +349,9 @@ async function prepare() {
 }
 
 function updateFreshness() {
+  if (state.wallet && state.account && !accountsInclude(state.wallet.accounts, state.account)) {
+    clearAccount('allocationChanged'); showStatus('statusAccountChanged', 'reconnectPrepare');
+  }
   if (state.prepared) {
     const remaining = Math.max(0, Math.ceil((MAX_PREPARE_AGE_MS - (Date.now() - state.preparedAt)) / 1000));
     setText('freshness', remaining ? 'freshnessRemaining' : 'freshnessExpired', { seconds: remaining });
@@ -377,7 +380,7 @@ async function signAndSubmit() {
   }
   const generation = state.generation;
   if (state.selectedWallet !== wallet || !detectedWallets().includes(wallet)) throw new LocalizedError('errorWalletChanged');
-  if (!wallet.accounts.some(item => item.address === account.address)) throw new LocalizedError('errorAccountChanged');
+  if (!accountsInclude(wallet.accounts, account)) throw new LocalizedError('errorAccountChanged');
   showStatus('statusAuthorization', 'authorizationMessage', '', { wallet: wallet.name });
   let signedOutput;
   try {
@@ -386,7 +389,8 @@ async function signAndSubmit() {
     });
     if (!outputs || outputs.length !== 1) throw new LocalizedError('errorOutputCount');
     signedOutput = outputs[0].signedTransaction;
-    if (generation !== state.generation || state.selectedWallet !== wallet || !detectedWallets().includes(wallet)) throw new LocalizedError('errorAccountChangedSigning');
+    if (generation !== state.generation || state.selectedWallet !== wallet || !detectedWallets().includes(wallet) ||
+      !accountsInclude(wallet.accounts, account)) throw new LocalizedError('errorAccountChangedSigning');
     const signedTx = verifySignedTransaction(prepared, signedOutput, account.address);
     state.submitted = true; updateButtons();
     showStatus('statusSubmitting', 'submittingMessage');
@@ -446,23 +450,29 @@ async function donate(amount: DonationAmount) {
   invalidatePrepared();
   setText('donation-status', 'donationPreparing', { amount });
   try {
-    const prepared = await prepareDonation(account.address, amount);
-    if (generation !== state.generation || state.selectedWallet !== wallet ||
-      !wallet.accounts.some(item => item.address === account.address)) throw new LocalizedError('errorAccountChanged');
     const versions = wallet.features['solana:signTransaction'].supportedTransactionVersions;
+    const version = donationVersion(wallet);
+    if (version === null) throw new LocalizedError('errorDonationTransaction');
+    const prepared = await prepareDonation(account.address, amount, undefined, version);
+    if (generation !== state.generation || state.selectedWallet !== wallet ||
+      !accountsInclude(wallet.accounts, account)) throw new LocalizedError('errorAccountChanged');
     if (versions && !versions.includes(prepared.tx.version)) throw new LocalizedError('errorDonationTransaction');
     setText('donation-status', 'donationAuthorization', { amount, wallet: wallet.name,
-      address: DONATION_ADDRESS, fee: formatSol(prepared.fee) });
+      address: DONATION_ADDRESS, fee: formatSol(prepared.fee), maxFee: '0.00005' });
     const outputs = await wallet.features['solana:signTransaction'].signTransaction({ account,
       chain: mainnetChain(account), transaction: Uint8Array.from(prepared.bytes) });
     if (!outputs || outputs.length !== 1) throw new LocalizedError('errorOutputCount');
     if (generation !== state.generation || state.selectedWallet !== wallet || !detectedWallets().includes(wallet) ||
-      !wallet.accounts.some(item => item.address === account.address)) throw new LocalizedError('errorAccountChangedSigning');
+      !accountsInclude(wallet.accounts, account)) throw new LocalizedError('errorAccountChangedSigning');
     const verified = verifyDonationSigned(prepared, outputs[0].signedTransaction, account.address);
+    setText('donation-status', 'donationChecking');
+    const fee = await checkDonationNetwork(verified, account.address, amount);
+    if (generation !== state.generation || state.selectedWallet !== wallet || !detectedWallets().includes(wallet) ||
+      !accountsInclude(wallet.accounts, account)) throw new LocalizedError('errorAccountChangedSigning');
     state.donation = { amount, signature: verified.signature, status: 'pending' };
     $('donation-transaction').href = `https://solscan.io/tx/${encodeURIComponent(verified.signature)}`;
     $('donation-transaction').hidden = false; $('refresh-donation').hidden = false;
-    setText('donation-status', 'donationSubmitting'); updateButtons();
+    setText('donation-status', 'donationSubmitting', { fee: formatSol(fee) }); updateButtons();
     try { await submitDonation(verified); } catch {
       setText('donation-status', 'donationUnknown');
       return; // A lost response must never cause an automatic resend.

@@ -1,5 +1,5 @@
 import { isRecord, isWalletAccount } from './types.ts';
-import type { SolanaWallet } from './types.ts';
+import type { SolanaWallet, WalletAccount } from './types.ts';
 export const SOLANA_MAINNET = 'solana:mainnet';
 export const SOLANA_MAINNET_GENESIS = 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp';
 const MAINNET_CHAINS = [SOLANA_MAINNET, SOLANA_MAINNET_GENESIS];
@@ -42,4 +42,22 @@ export function supportedWallets(wallets: readonly unknown[]): SolanaWallet[] {
 export function selectWallet(wallets: readonly SolanaWallet[], previous: SolanaWallet | null = null): SolanaWallet | null {
   if (previous && wallets.includes(previous)) return previous;
   return wallets.length === 1 ? wallets[0] : null;
+}
+
+// OKX's direct provider exposes the actively selected Solana account and its
+// accountChanged event. Prefer it over a potentially stale Standard account list.
+export function preferOkxProvider(wallets: readonly SolanaWallet[], providerWallet: SolanaWallet | null): SolanaWallet[] {
+  return providerWallet && walletBrand(providerWallet) === 'okx' ?
+    [...wallets.filter(wallet => walletBrand(wallet) !== 'okx'), providerWallet] : [...wallets];
+}
+export function accountsInclude(accounts: readonly unknown[], account: WalletAccount): boolean {
+  return accounts.some(value => isWalletAccount(value) && value.address === account.address && mainnetChain(value) &&
+    value.features.includes('solana:signTransaction') && value.publicKey.every((byte, index) => byte === account.publicKey[index]));
+}
+
+export function donationVersion(wallet: SolanaWallet): 'legacy' | 0 | null {
+  const versions = wallet.features['solana:signTransaction'].supportedTransactionVersions;
+  if (walletBrand(wallet) === 'okx' && versions?.includes('legacy')) return 'legacy';
+  if (!versions || versions.includes(0)) return 0;
+  return versions.includes('legacy') ? 'legacy' : null;
 }

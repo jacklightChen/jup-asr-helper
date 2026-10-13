@@ -1,4 +1,4 @@
-import type { VersionedTransaction } from '@solana/web3.js';
+import type { VersionedTransaction, Transaction } from '@solana/web3.js';
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -22,7 +22,7 @@ export interface SolanaWallet {
     'standard:connect': { connect(): Promise<{ accounts: readonly WalletAccount[] }>; version?: string };
     'solana:signTransaction': {
       version?: string;
-      supportedTransactionVersions?: readonly ('legacy' | 0)[];
+      supportedTransactionVersions?: readonly ('legacy' | 0 | 1)[];
       signTransaction(input: { account: WalletAccount; chain: string | null; transaction: Uint8Array }): Promise<readonly { signedTransaction: Uint8Array }[]>;
     };
     'standard:events'?: {
@@ -39,10 +39,10 @@ export interface InjectedProvider {
   isTrust?: boolean;
   isTrustWallet?: boolean;
   connect?(): Promise<unknown>;
-  signTransaction?(transaction: VersionedTransaction): Promise<{ serialize(): Uint8Array } | void>;
-  on?(event: string, listener: () => void): void;
-  off?(event: string, listener: () => void): void;
-  removeListener?(event: string, listener: () => void): void;
+  signTransaction?(transaction: Transaction | VersionedTransaction): Promise<{ serialize(): Uint8Array } | void>;
+  on?(event: string, listener: (key?: unknown) => void): void;
+  off?(event: string, listener: (key?: unknown) => void): void;
+  removeListener?(event: string, listener: (key?: unknown) => void): void;
 }
 export interface SignaturePreparation {
   tx: VersionedTransaction;

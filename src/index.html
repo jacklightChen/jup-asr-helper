@@ -75,7 +75,7 @@
       <button id="copy-donation" type="button" class="button secondary" data-i18n="copyDonation">复制地址</button>
       <p id="donation-copy-status" class="micro" aria-live="polite"></p>
       <div class="donation-actions"><button id="donate-small" type="button" class="button secondary" data-i18n="donateSmall" disabled>捐赠 0.01 SOL</button><button id="donate-large" type="button" class="button secondary" data-i18n="donateLarge" disabled>捐赠 0.05 SOL</button></div>
-      <p class="micro" data-i18n="donationHint">连接钱包后可捐赠。另需支付网络费，转账前请在钱包中核对金额和上方收款地址。捐赠不影响领取资格。</p>
+      <p class="micro" data-i18n="donationHint">连接钱包后可捐赠。网络费另计，上限 0.00005 SOL。转账前请在钱包中核对金额和上方收款地址。捐赠不影响领取资格。</p>
       <p id="donation-status" class="micro" aria-live="polite"></p>
       <a id="donation-transaction" target="_blank" rel="noopener noreferrer" data-i18n="viewDonation" hidden>查看捐赠交易 ↗</a>
       <button id="refresh-donation" type="button" class="button secondary" data-i18n="refreshDonation" hidden>查询捐赠状态</button>
@@ -87,7 +87,7 @@
         <p id="history-updated" class="micro" hidden></p>
       </section>
     </section>
-    <footer aria-labelledby="disclaimer-title"><h2 id="disclaimer-title" data-i18n="disclaimerTitle">免责声明</h2><p data-i18n="footerCommunity">社区开源助手，使用 Wallet Standard 和 Phantom 官方接口与 Jupiter 活动 API；与所列钱包或 Jupiter 无隶属关系。</p><p data-i18n="footerPrivacy">本页不会请求私钥或助记词。奖励由官方交易执行。</p><p data-i18n="disclaimerText">本工具是独立社区项目，与所列钱包或 Jupiter 无隶属关系，按现状提供，不构成投资建议。接口、钱包版本与个人资格可能影响领取结果；签名前请自行核对网络、收款地址、金额和质押操作。链上确认的转账无法由本工具撤回。捐赠完全自愿，与 ASR 领取分开。</p><div><a href="https://developers.binance.com/en/docs/products/web3-connect/solana-provider" target="_blank" rel="noopener noreferrer" data-i18n="binanceDocs">Binance 接口文档 ↗</a><span>·</span><a href="https://docs.phantom.com/solana/sending-a-transaction" target="_blank" rel="noopener noreferrer" data-i18n="phantomDocs">Phantom 接口文档 ↗</a><span>·</span><a href="https://jup.ag/rewards/asr-2026-q3" target="_blank" rel="noopener noreferrer">Jupiter ↗</a></div></footer>
+    <footer aria-labelledby="disclaimer-title"><h2 id="disclaimer-title" data-i18n="disclaimerTitle">免责声明</h2><p data-i18n="footerCommunity">社区开源助手，使用 Wallet Standard、钱包官方 Solana 接口与 Jupiter 活动 API；与所列钱包或 Jupiter 无隶属关系。</p><p data-i18n="footerPrivacy">本页不会请求私钥或助记词。奖励由官方交易执行。</p><p data-i18n="disclaimerText">本工具是独立社区项目，与所列钱包或 Jupiter 无隶属关系，按现状提供，不构成投资建议。接口、钱包版本与个人资格可能影响领取结果；签名前请自行核对网络、收款地址、金额和质押操作。链上确认的转账无法由本工具撤回。捐赠完全自愿，与 ASR 领取分开。</p><div><a href="https://developers.binance.com/en/docs/products/web3-connect/solana-provider" target="_blank" rel="noopener noreferrer" data-i18n="binanceDocs">Binance 接口文档 ↗</a><span>·</span><a href="https://docs.phantom.com/solana/sending-a-transaction" target="_blank" rel="noopener noreferrer" data-i18n="phantomDocs">Phantom 接口文档 ↗</a><span>·</span><a href="https://jup.ag/rewards/asr-2026-q3" target="_blank" rel="noopener noreferrer">Jupiter ↗</a></div></footer>
   </main>
   <dialog id="wallet-picker" aria-labelledby="wallet-picker-title">
     <div class="wallet-modal-head"><h2 id="wallet-picker-title" data-i18n="walletPickerTitle">连接钱包</h2><button id="wallet-picker-close" type="button" class="wallet-modal-close" data-i18n-aria="closeWalletPicker" aria-label="关闭">×</button></div>

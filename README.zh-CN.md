@@ -16,15 +16,17 @@ GitHub Pages 网站地址：[jup-asr-helper.github.io](https://jup-asr-helper.gi
 | --- | --- | --- |
 | Binance Wallet | Solana Wallet Standard | 用户已于 2026 年 10 月 13 日确认手机领取成功 |
 | Phantom | Wallet Standard 或官方 `window.phantom.solana` provider | 已测试适配器；真实领取尚未确认 |
-| OKX Wallet | Wallet Standard 或 `window.okxwallet.solana` provider | 已测试适配器；真实领取尚未确认 |
+| OKX Wallet | 优先使用官方 `window.okxwallet.solana` provider；回退到 Wallet Standard | 已测试适配器；真实领取尚未确认 |
 | Backpack | Wallet Standard 或 `window.backpack` provider | 已测试适配器；真实领取尚未确认 |
 | MetaMask | 原生 Solana Wallet Standard 注册 | 已测试主网发现；真实领取尚未确认 |
 | Solflare | Wallet Standard 或 `window.solflare` provider | 已测试适配器；真实领取尚未确认 |
 | Trust Wallet | 官方 `Trust` Wallet Standard 注册；注入的 Solana provider 回退 | 已测试适配器；真实领取尚未确认 |
 
-钱包发现要求名称匹配、支持 Solana 主网，并提供 `standard:connect` 和只签名的 `solana:signTransaction`。同时支持 `solana:mainnet` 别名和主网 CAIP-2 标识。只有 EVM 接口的 MetaMask 无法连接。连接弹窗始终显示全部支持钱包，包括 Binance Wallet。已检测到 Solana 接口的钱包可以直接点击卡片连接；未检测到时，显示在钱包内打开页面或启用扩展的说明。同一钱包有多个实例时，可选择对应卡片。注入适配器调用各钱包的官方 Solana 交易接口，所有返回的签名都经过相同的本地消息与签名核验，再由 Jupiter `postClaim` 提交。
+钱包发现要求名称匹配、支持 Solana 主网，并提供 `standard:connect` 和只签名的 `solana:signTransaction`。同时支持 `solana:mainnet` 别名和主网 CAIP-2 标识。只有 EVM 接口的 MetaMask 无法连接。连接弹窗始终显示全部支持钱包，包括 Binance Wallet。已检测到 Solana 接口的钱包可以直接点击卡片连接；未检测到时，显示在钱包内打开页面或启用扩展的说明。同一钱包有多个实例时，可选择对应卡片。OKX 官方 provider 可用时优先使用，以读取当前选中的 Solana 账户及账户切换事件。旧格式交易以原生 `Transaction` 传给注入接口，v0 格式使用 `VersionedTransaction`。注入适配器调用各钱包的官方 Solana 交易接口，所有返回的签名都经过相同的本地消息与签名核验，再由 Jupiter `postClaim` 提交。
 
-集成参考：[Binance Solana 接口](https://developers.binance.com/en/docs/products/web3-connect/solana-provider)、[Phantom provider](https://docs.phantom.com/solana/sending-a-transaction)、[OKX Solana provider](https://web3.okx.com/build/dev-docs/sdks/chains/solana/provider)、[Backpack](https://docs.backpack.app/)、[MetaMask Wallet Standard 功能](https://docs.metamask.io/metamask-connect/solana/reference/methods/)、[Trust Wallet Solana provider](https://github.com/trustwallet/trust-web3-provider/tree/main/packages/solana)、[Solflare SDK](https://docs.solflare.com/solflare/technical/integrate-solflare/solflare-wallet-sdk)。
+适配器测试、Wallet Standard 接口样例及真实验证范围记录在[钱包兼容性检查](docs/wallet-compatibility.md)中。
+
+集成参考：[Binance Solana 接口](https://developers.binance.com/en/docs/products/web3-connect/solana-provider)、[Phantom provider](https://docs.phantom.com/solana/sending-a-transaction)、[OKX Solana provider](https://web3.okx.com/onchainos/dev-docs/wallet/dapp-connect/chains/solana/provider)、[Backpack](https://docs.backpack.app/)、[MetaMask Wallet Standard 功能](https://docs.metamask.io/metamask-connect/solana/reference/methods/)、[Trust Wallet Solana provider](https://github.com/trustwallet/trust-web3-provider/tree/main/packages/solana)、[Solflare SDK](https://docs.solflare.com/solflare/technical/integrate-solflare/solflare-wallet-sdk)。
 
 当前活动元数据设置了 `onlyClaimableThroughJup: true`。页面会同时展示官方标记和已反馈的 Binance Wallet 领取成功情况。工具使用钱包的真实账户与签名，不伪装成 Jupiter Wallet，也不修改领取资格。之后的领取仍可能受接口可用性、钱包版本及个人资格影响。
 
@@ -115,7 +117,7 @@ Solana 捐款地址：
 5QDviToVpnePujox1tm3cwSsAwp9WKChiaJnWWSbHS3H
 ```
 
-连接钱包后，可使用 **捐赠 0.01 SOL** 或 **捐赠 0.05 SOL** 按钮。每次都会单独向上方地址转入所选 SOL，另需支付网络费，并由钱包授权确认。工具核对收款地址、固定金额、原始交易消息与签名后，通过 [PublicNode Solana 主网 RPC](https://solana.publicnode.com/) 提交。收到交易编号不等于确认成功，请使用 **查询捐赠状态** 或链上链接核实。提交或确认结果未知时，按钮保持禁用，避免重复转账；不会自动重新发送。参见 Solana [提交交易](https://solana.com/docs/rpc/http/sendtransaction)与[确认状态](https://solana.com/docs/rpc/http/getsignaturestatuses)文档。
+连接钱包后，可使用 **捐赠 0.01 SOL** 或 **捐赠 0.05 SOL** 按钮。每次都会单独向上方地址转入所选 SOL，另需支付网络费，并由钱包授权确认。工具核对唯一一笔 SOL 转账的固定收款地址、金额、已连接的付款账户，并核验钱包返回交易的真实签名后，通过 [PublicNode Solana 主网 RPC](https://solana.publicnode.com/) 提交。捐赠允许钱包在 legacy/v0 格式之间重建、更新区块哈希，以及在转账前添加最多两条已识别的计算预算指令。本地费用上限和提交前查询的实际网络费都必须不超过 **0.00005 SOL**。额外转账、程序、签名账户、未知账户及地址查找表会被拒绝。提交前再次检查实际手续费、当前余额、区块哈希有效性以及钱包账户是否改变。OKX 支持时优先使用旧格式捐赠交易；其他只提供旧格式的钱包也会自动选择旧格式。ASR 领取仍要求交易消息的每个字节一致。收到交易编号不等于确认成功，请使用 **查询捐赠状态** 或链上链接核实。提交或确认结果未知时，按钮保持禁用，避免重复转账；不会自动重新发送。参见 Solana [提交交易](https://solana.com/docs/rpc/http/sendtransaction)与[确认状态](https://solana.com/docs/rpc/http/getsignaturestatuses)文档。
 
 捐赠区还会查询该地址最近 20 笔已确认交易，展示最多 10 条 SOL 转入记录，包括发送地址、精确 SOL 金额、UTC+8 时间和 Solscan 交易链接。通过钱包手动转入的 SOL 也可能显示。链上记录无法证明捐赠意图，因此这是近期转入视图，不代表完整捐赠账本。只统计成功的 System Program 转账（包括内部指令），排除转出、代币转账和租金相关余额变化。可手动刷新，页面确认捐赠成功后也会刷新。查询无需连接钱包或签名；RPC 查询失败或不完整时会显示提示，不影响领取。参见 Solana [签名记录](https://solana.com/docs/rpc/http/getsignaturesforaddress)与[解析交易](https://solana.com/docs/rpc/http/gettransaction)文档。
 

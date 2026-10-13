@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Keypair, SystemProgram, TransactionMessage, VersionedTransaction } from '@solana/web3.js';
+import { Keypair, SystemProgram, Transaction, TransactionMessage, VersionedTransaction } from '@solana/web3.js';
 import { verifySignedTransaction, sameBytes } from '../src/transaction.ts';
-import { supportedWallets, walletBrand, selectWallet, SOLANA_MAINNET, SOLANA_MAINNET_GENESIS, mainnetChain } from '../src/wallets.ts';
+import { supportedWallets, walletBrand, selectWallet, SOLANA_MAINNET, SOLANA_MAINNET_GENESIS, mainnetChain, preferOkxProvider, accountsInclude } from '../src/wallets.ts';
 import { createPhantomWallet, createInjectedWallet, phantomAccount, matchesPhantomAccount } from '../src/phantom.ts';
 
 const neverCall = () => { throw new Error('Discovery tests must not request connection or signing'); };
@@ -43,7 +43,7 @@ for (const name of ['OKX Wallet', 'Backpack', 'Solflare', 'Trust Wallet']) {
     }).compileToV0Message());
     const bytes = Uint8Array.from(tx.serialize());
     const provider = { publicKey: user.publicKey, connect: async () => {},
-      signTransaction: async transaction => { transaction.sign([user]); return transaction; } };
+      signTransaction: async transaction => { if (transaction instanceof Transaction) transaction.sign(user); else transaction.sign([user]); return transaction; } };
     const adapter = createInjectedWallet(provider, name);
     const { accounts } = await adapter.features['standard:connect'].connect();
     const [output] = await adapter.features['solana:signTransaction'].signTransaction({ account: accounts[0], chain: SOLANA_MAINNET, transaction: bytes });
@@ -119,7 +119,7 @@ for (const version of ['legacy', 0]) {
     const bytes = Uint8Array.from(tx.serialize());
     const provider = { isPhantom: true, publicKey: user.publicKey,
       connect: async () => ({ publicKey: user.publicKey }),
-      signTransaction: async transaction => { transaction.sign([user]); return transaction; } };
+      signTransaction: async transaction => { if (transaction instanceof Transaction) transaction.sign(user); else transaction.sign([user]); return transaction; } };
     const adapter = createPhantomWallet(provider);
     const { accounts } = await adapter.features['standard:connect'].connect();
     const [output] = await adapter.features['solana:signTransaction'].signTransaction({
@@ -133,3 +133,48 @@ for (const version of ['legacy', 0]) {
       account: accounts[0], chain: SOLANA_MAINNET, transaction: bytes }));
   });
 }
+
+test('OKX direct provider replaces a stale Standard account and reads the actively selected key', async () => {
+  const native = wallet('OKX Wallet'), phantom = wallet('Phantom');
+  const first = Keypair.generate(), second = Keypair.generate();
+  const provider = { publicKey: first.publicKey, connect: async () => {}, signTransaction: neverCall };
+  const direct = createInjectedWallet(provider, 'OKX Wallet');
+  assert.deepEqual(preferOkxProvider([native, phantom], direct), [phantom, direct]);
+  assert.deepEqual(preferOkxProvider([native], null), [native]);
+  const { accounts } = await direct.features['standard:connect'].connect();
+  assert.equal(accountsInclude(direct.accounts, accounts[0]), true);
+  provider.publicKey = second.publicKey;
+  assert.equal(direct.accounts[0].address, second.publicKey.toBase58());
+  assert.equal(accountsInclude(direct.accounts, accounts[0]), false);
+  assert.equal(accountsInclude([{ ...accounts[0], publicKey: second.publicKey.toBytes() }], accounts[0]), false);
+});
+
+test('OKX accountChanged payload invalidates the old account even if the provider property updates later', () => {
+  const first = Keypair.generate(), second = Keypair.generate(), callbacks = new Map();
+  const provider = { publicKey: first.publicKey, connect: neverCall, signTransaction: neverCall,
+    on: (event, callback) => callbacks.set(event, callback), removeListener: (event) => callbacks.delete(event) };
+  const direct = createInjectedWallet(provider, 'OKX Wallet');
+  const previous = direct.accounts[0]; let event;
+  const stop = direct.features['standard:events'].on('change', value => { event = value; });
+  callbacks.get('accountChanged')(second.publicKey);
+  assert.equal(event.accounts[0].address, second.publicKey.toBase58());
+  assert.equal(accountsInclude(event.accounts, previous), false);
+  callbacks.get('accountChanged')(null);
+  assert.deepEqual(event.accounts, []);
+  stop(); assert.equal(callbacks.size, 0);
+});
+
+test('OKX legacy adapter passes an actual legacy Transaction to the official sign-only provider', async () => {
+  const user = Keypair.generate();
+  const unsigned = new Transaction({ feePayer: user.publicKey, recentBlockhash: Keypair.generate().publicKey.toBase58() })
+    .add(SystemProgram.transfer({ fromPubkey: user.publicKey, toPubkey: Keypair.generate().publicKey, lamports: 1 }));
+  const bytes = unsigned.serialize({ requireAllSignatures: false, verifySignatures: false });
+  const provider = { publicKey: user.publicKey, connect: async () => {}, signTransaction: async tx => {
+    assert.ok(tx instanceof Transaction); tx.sign(user); return tx;
+  } };
+  const direct = createInjectedWallet(provider, 'OKX Wallet');
+  const { accounts } = await direct.features['standard:connect'].connect();
+  const [result] = await direct.features['solana:signTransaction'].signTransaction({ account: accounts[0], chain: SOLANA_MAINNET, transaction: bytes });
+  const tx = VersionedTransaction.deserialize(bytes);
+  assert.ok(verifySignedTransaction({ tx, bytes, signerIndex: 0, message: Uint8Array.from(tx.message.serialize()) }, result.signedTransaction, user.publicKey.toBase58()));
+});

@@ -1,5 +1,5 @@
 import type { InjectedProvider, WalletAccount, SolanaWallet } from './types.ts';
-import { PublicKey, VersionedTransaction } from '@solana/web3.js';
+import { PublicKey, Transaction, VersionedTransaction } from '@solana/web3.js';
 import { SOLANA_MAINNET } from './wallets.ts';
 import { LocalizedError } from './i18n.ts';
 
@@ -47,7 +47,8 @@ export function createInjectedWallet(provider: InjectedProvider | null | undefin
         async signTransaction({ account, chain, transaction }) {
           const current = currentAccount();
           if (!current || !matchesPhantomAccount(provider, account, chain)) throw new LocalizedError('errorAccountChanged');
-          const unsigned = VersionedTransaction.deserialize(transaction);
+          const decoded = VersionedTransaction.deserialize(transaction);
+          const unsigned = decoded.version === 'legacy' ? Transaction.from(transaction) : decoded;
           const signed = (await sign(unsigned)) ?? unsigned;
           if (!currentAccount() || !matchesPhantomAccount(provider, account, chain)) throw new LocalizedError('errorAccountChangedSigning');
           return [{ signedTransaction: Uint8Array.from(signed.serialize()) }];
@@ -57,7 +58,10 @@ export function createInjectedWallet(provider: InjectedProvider | null | undefin
         version: '1.0.0',
         on(event, listener) {
           if (event !== 'change' || typeof provider.on !== 'function') return () => {};
-          const changed = () => { const account = currentAccount(); listener({ accounts: account ? [account] : [] }); };
+          const changed = (key?: unknown) => {
+            const account = key === undefined ? currentAccount() : phantomAccount({ publicKey: { toString: () => String(key) } });
+            listener({ accounts: account ? [account] : [] });
+          };
           const disconnectedEvent = () => { disconnected = true; listener({ accounts: [] }); };
           provider.on('accountChanged', changed); provider.on('disconnect', disconnectedEvent);
           return () => {

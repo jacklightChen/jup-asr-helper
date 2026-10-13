@@ -101,6 +101,8 @@ function detectedWallets() {
     ['OKX Wallet', window.okxwallet?.solana],
     ['Backpack', window.backpack?.isBackpack === true ? window.backpack : null],
     ['Solflare', window.solflare?.isSolflare === true ? window.solflare : null],
+    ['Trust Wallet', window.trustwallet?.solana ??
+      (window.solana?.isTrust === true || window.solana?.isTrustWallet === true ? window.solana : null)],
   ];
   for (const [name, provider] of injected) {
     const wallet = injectedWallet(name, provider);

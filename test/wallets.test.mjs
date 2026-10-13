@@ -34,7 +34,7 @@ test('additional wallets require sign-only features and recognize both Solana ma
   assert.deepEqual(supportedWallets([{ ...wallet('MetaMask'), features: { 'standard:connect': { connect: neverCall } } }]), []);
 });
 
-for (const name of ['OKX Wallet', 'Backpack', 'Solflare']) {
+for (const name of ['OKX Wallet', 'Backpack', 'Solflare', 'Trust Wallet']) {
   test(`${name} injected sign-only adapter preserves transaction bytes and verifies its output`, async () => {
     const user = Keypair.generate();
     const tx = new VersionedTransaction(new TransactionMessage({ payerKey: user.publicKey,
@@ -52,6 +52,17 @@ for (const name of ['OKX Wallet', 'Backpack', 'Solflare']) {
     await assert.rejects(adapter.features['solana:signTransaction'].signTransaction({ account: accounts[0], chain: SOLANA_MAINNET, transaction: bytes }));
   });
 }
+
+test('Trust Wallet supports the official Trust registry name and rejects EVM-only or send-only interfaces', () => {
+  const trust = wallet('Trust');
+  assert.equal(walletBrand(trust), 'trust');
+  assert.equal(walletBrand(wallet('Trust Wallet')), 'trust');
+  assert.equal(walletBrand(wallet('Trust Wallet Fake')), null);
+  assert.deepEqual(supportedWallets([trust]), [trust]);
+  assert.deepEqual(supportedWallets([{ ...trust, chains: ['eip155:1'] }]), []);
+  assert.deepEqual(supportedWallets([{ ...trust, features: { 'standard:connect': { connect: neverCall },
+    'solana:signAndSendTransaction': { signAndSendTransaction: neverCall } } }]), []);
+});
 
 test('multiple wallets require a visible choice and preserve object identity across discovery changes', () => {
   const first = wallet('Phantom'), second = wallet('Phantom'), binance = wallet('Binance Wallet');

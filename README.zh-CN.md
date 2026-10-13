@@ -2,7 +2,7 @@
 
 简体中文 · [English](README.md) · [GitHub 仓库](https://github.com/jacklightChen/jup-asr-helper) · [打开助手](https://jup-asr-helper.github.io/)
 
-开源领取助手：使用 **Binance Wallet、Phantom、OKX Wallet、Backpack、MetaMask 或 Solflare** 核对并领取 Jupiter ASR 奖励。可在支持的钱包手机 DApp 浏览器，或启用了钱包扩展的电脑浏览器中打开。每位访问者连接自己的 Solana 账户，并在钱包中授权每笔交易。本项目独立于 Jupiter 和所列钱包。
+开源领取助手：使用 **Binance Wallet、Phantom、OKX Wallet、Backpack、MetaMask、Solflare 或 Trust Wallet** 核对并领取 Jupiter ASR 奖励。可在支持的钱包手机 DApp 浏览器，或启用了钱包扩展的电脑浏览器中打开。每位访问者连接自己的 Solana 账户，并在钱包中授权每笔交易。本项目独立于 Jupiter 和所列钱包。
 
 GitHub Pages 网站地址：[jup-asr-helper.github.io](https://jup-asr-helper.github.io/)。手机端请在支持的钱包内打开该链接，以连接钱包。
 
@@ -20,10 +20,11 @@ GitHub Pages 网站地址：[jup-asr-helper.github.io](https://jup-asr-helper.gi
 | Backpack | Wallet Standard 或 `window.backpack` provider | 已测试适配器；真实领取尚未确认 |
 | MetaMask | 原生 Solana Wallet Standard 注册 | 已测试主网发现；真实领取尚未确认 |
 | Solflare | Wallet Standard 或 `window.solflare` provider | 已测试适配器；真实领取尚未确认 |
+| Trust Wallet | 官方 `Trust` Wallet Standard 注册；注入的 Solana provider 回退 | 已测试适配器；真实领取尚未确认 |
 
 钱包发现要求名称匹配、支持 Solana 主网，并提供 `standard:connect` 和只签名的 `solana:signTransaction`。同时支持 `solana:mainnet` 别名和主网 CAIP-2 标识。只有 EVM 接口的 MetaMask 无法连接。检测到多个支持的钱包时，先选择钱包再连接。注入适配器调用各钱包的官方 Solana 交易接口，所有返回的签名都经过相同的本地消息与签名核验，再由 Jupiter `postClaim` 提交。
 
-集成参考：[Binance Solana 接口](https://developers.binance.com/en/docs/products/web3-connect/solana-provider)、[Phantom provider](https://docs.phantom.com/solana/sending-a-transaction)、[OKX Solana provider](https://web3.okx.com/build/dev-docs/sdks/chains/solana/provider)、[Backpack](https://docs.backpack.app/)、[MetaMask Wallet Standard 功能](https://docs.metamask.io/metamask-connect/solana/reference/methods/)、[Solflare SDK](https://docs.solflare.com/solflare/technical/integrate-solflare/solflare-wallet-sdk)。
+集成参考：[Binance Solana 接口](https://developers.binance.com/en/docs/products/web3-connect/solana-provider)、[Phantom provider](https://docs.phantom.com/solana/sending-a-transaction)、[OKX Solana provider](https://web3.okx.com/build/dev-docs/sdks/chains/solana/provider)、[Backpack](https://docs.backpack.app/)、[MetaMask Wallet Standard 功能](https://docs.metamask.io/metamask-connect/solana/reference/methods/)、[Trust Wallet Solana provider](https://github.com/trustwallet/trust-web3-provider/tree/main/packages/solana)、[Solflare SDK](https://docs.solflare.com/solflare/technical/integrate-solflare/solflare-wallet-sdk)。
 
 当前活动元数据设置了 `onlyClaimableThroughJup: true`。页面会同时展示官方标记和已反馈的 Binance Wallet 领取成功情况。工具使用钱包的真实账户与签名，不伪装成 Jupiter Wallet，也不修改领取资格。之后的领取仍可能受接口可用性、钱包版本及个人资格影响。
 
@@ -65,7 +66,7 @@ npm test
 npm run build
 ```
 
-构建产物是 `dist/index.html`、`dist/app.js` 和 `dist/style.css`。发布改动前运行 `npm run build:pages`，同时更新仓库根目录中需要提交的 `index.html`、`app.js`、`style.css` 和 `.nojekyll`。资源使用 `./` 相对路径，可以部署为组织主页，也可以部署到 GitHub Pages 的项目子路径。查看本地布局：
+构建产物包括 `dist/index.html`、`dist/assets/` 中按内容哈希命名的脚本和样式，以及 `dist/asset-manifest.json`，并保留 `app.js`、`style.css` 兼容副本。资源哈希避免缓存的 HTML 与脚本、样式混用版本。`npm run build:pages` 会同步更新部署仓库根目录资源，并保留旧哈希文件供缓存页面使用。资源采用相对路径，支持组织主页和项目子路径。查看本地布局：
 
 ```sh
 python3 -m http.server 8080 --directory dist
@@ -96,8 +97,7 @@ https://datapi.jup.ag/rewards/v1/campaigns/asr-2026-q3
 
 源码维护在 [`jacklightChen/jup-asr-helper`](https://github.com/jacklightChen/jup-asr-helper)。网站由 [`jup-asr-helper/jup-asr-helper.github.io`](https://github.com/jup-asr-helper/jup-asr-helper.github.io) 发布，保留其已启用的 **Deploy from a branch → `main` → `/ (root)`** 配置。无需自定义域名或部署密钥，其他 GitHub Pages 设置保持不变。
 
-发布改动前，运行 `npm test` 和 `npm run build`，将源码提交并推送到个人仓库。随后在组织主页仓库的独立检出目录中，用 `dist/index.html`、`dist/app.js`、`dist/style.css` 更新根目录的对应文件，保留 `.nojekyll`，提交并推送组织仓库的 `main` 分支。也可以在部署目录中运行 `npm run build:pages`，更新根目录页面资源。
-
+发布前运行 `npm test` 和 `npm run build`，将源码提交并推送到个人仓库。将本次发布的 `src/`、`test/`、`build.mjs`、package 文件和 README 同步到组织主页仓库的独立检出目录，保留它的部署检查工作流。在该目录运行 `npm ci`、`npm test`、`npm run build:pages`，随后提交所有更新的源码与构建资源，推送组织仓库的 `main` 分支。保留 `.nojekyll` 和 `assets/` 中的旧哈希文件，缓存的 HTML 仍可能引用它们。
 源码的 [CI 工作流](https://github.com/jacklightChen/jup-asr-helper/blob/main/.github/workflows/ci.yml)会测试并构建。部署仓库还会检查已提交的页面资源与源码快照一致，这些检查均不修改 Pages 设置。组织仓库的 `main` 更新后，GitHub 的 **pages build and deployment** 工作流发布到 [https://jup-asr-helper.github.io/](https://jup-asr-helper.github.io/)。参见 [GitHub 发布来源官方文档](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)。
 
 ## 许可证

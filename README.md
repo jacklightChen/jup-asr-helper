@@ -2,7 +2,7 @@
 
 [简体中文](README.zh-CN.md) · English · [GitHub repository](https://github.com/jacklightChen/jup-asr-helper) · [Open helper](https://jup-asr-helper.github.io/)
 
-An open-source helper for reviewing and claiming Jupiter ASR rewards with **Binance Wallet, Phantom, OKX Wallet, Backpack, MetaMask, or Solflare**. Open it in a supported wallet's mobile DApp browser or an extension-enabled desktop browser. Each visitor connects their own Solana account and approves each transaction in their wallet. This independent community project is not affiliated with Jupiter or the listed wallets.
+An open-source helper for reviewing and claiming Jupiter ASR rewards with **Binance Wallet, Phantom, OKX Wallet, Backpack, MetaMask, Solflare, or Trust Wallet**. Open it in a supported wallet's mobile DApp browser or an extension-enabled desktop browser. Each visitor connects their own Solana account and approves each transaction in their wallet. This independent community project is not affiliated with Jupiter or the listed wallets.
 
 The GitHub Pages website is [jup-asr-helper.github.io](https://jup-asr-helper.github.io/). On a phone, open that URL inside a supported wallet to connect your wallet.
 
@@ -20,10 +20,11 @@ Only the **ASR 2026 Q3** campaign (`asr-2026-q3`) is supported. Its published cl
 | Backpack | Wallet Standard or `window.backpack` provider | Adapter tested; live claim not yet confirmed |
 | MetaMask | Native Solana Wallet Standard registration | Mainnet discovery tested; live claim not yet confirmed |
 | Solflare | Wallet Standard or `window.solflare` provider | Adapter tested; live claim not yet confirmed |
+| Trust Wallet | Official `Trust` Wallet Standard registration; injected Solana provider fallback | Adapter tested; live claim not yet confirmed |
 
 Wallet discovery requires a recognized name, Solana mainnet, `standard:connect`, and sign-only `solana:signTransaction`. Both the `solana:mainnet` alias and the mainnet CAIP-2 identifier are supported. An EVM-only MetaMask provider is insufficient. With multiple supported wallets, select one before connecting. Injected adapters accept the wallets' official Solana transaction methods, and all signed output passes the same local message and signature checks before Jupiter's `postClaim` submission.
 
-Integration references: [Binance Solana interface](https://developers.binance.com/en/docs/products/web3-connect/solana-provider), [Phantom provider](https://docs.phantom.com/solana/sending-a-transaction), [OKX Solana provider](https://web3.okx.com/build/dev-docs/sdks/chains/solana/provider), [Backpack](https://docs.backpack.app/), [MetaMask Wallet Standard features](https://docs.metamask.io/metamask-connect/solana/reference/methods/), and [Solflare SDK](https://docs.solflare.com/solflare/technical/integrate-solflare/solflare-wallet-sdk).
+Integration references: [Binance Solana interface](https://developers.binance.com/en/docs/products/web3-connect/solana-provider), [Phantom provider](https://docs.phantom.com/solana/sending-a-transaction), [OKX Solana provider](https://web3.okx.com/build/dev-docs/sdks/chains/solana/provider), [Backpack](https://docs.backpack.app/), [MetaMask Wallet Standard features](https://docs.metamask.io/metamask-connect/solana/reference/methods/), [Trust Wallet Solana provider](https://github.com/trustwallet/trust-web3-provider/tree/main/packages/solana), and [Solflare SDK](https://docs.solflare.com/solflare/technical/integrate-solflare/solflare-wallet-sdk).
 
 The campaign metadata currently sets `onlyClaimableThroughJup: true`. The page displays this official flag alongside the reported Binance Wallet success. It uses the wallet's real account and signature, without impersonating Jupiter Wallet or altering eligibility. API availability, wallet versions, and individual eligibility can still affect later claims.
 
@@ -65,7 +66,7 @@ npm test
 npm run build
 ```
 
-The build emits `dist/index.html`, `dist/app.js`, and `dist/style.css`. Run `npm run build:pages` to also refresh the committed `index.html`, `app.js`, `style.css`, and `.nojekyll` at the repository root before publishing changes. Asset references use `./`, so the site works at the organization homepage or under a GitHub Pages project path. To preview the layout locally:
+The build emits `dist/index.html`, content-hashed scripts and styles in `dist/assets/`, and `dist/asset-manifest.json`. Compatibility copies of `app.js` and `style.css` are also included. Content hashes keep cached HTML paired with the correct script and style versions. `npm run build:pages` additionally refreshes these files at the deployment repository root while retaining older hashed assets for cached visitors. Asset references are relative, supporting both homepage and project paths. To preview the layout locally:
 
 ```sh
 python3 -m http.server 8080 --directory dist
@@ -96,8 +97,7 @@ For a future ASR campaign, review the new metadata, contract/distributor address
 
 Source is maintained at [`jacklightChen/jup-asr-helper`](https://github.com/jacklightChen/jup-asr-helper). The website is published from [`jup-asr-helper/jup-asr-helper.github.io`](https://github.com/jup-asr-helper/jup-asr-helper.github.io), using its preserved **Deploy from a branch → `main` → `/ (root)`** configuration. No custom domain or deployment secret is required. Other GitHub Pages settings are unchanged.
 
-Before releasing a change, run `npm test` and `npm run build`, then commit and push the source to `jacklightChen/jup-asr-helper`. Copy `dist/index.html`, `dist/app.js`, and `dist/style.css` to the root of a separate checkout of the organization homepage repository. Keep its `.nojekyll` file, commit the updated assets there, and push its `main` branch. `npm run build:pages` is also available to refresh the root assets in the deployment checkout.
-
+Before releasing, run `npm test` and `npm run build`, then commit and push source to `jacklightChen/jup-asr-helper`. Sync the release's `src/`, `test/`, `build.mjs`, package files, and READMEs into a separate checkout of the organization homepage repository, preserving its deployment verification workflow. In that checkout, run `npm ci`, `npm test`, and `npm run build:pages`, then commit and push all updated source and generated assets to its `main` branch. Keep `.nojekyll` and older hashed files in `assets/`; cached HTML may still reference them.
 The source [CI workflow](https://github.com/jacklightChen/jup-asr-helper/blob/main/.github/workflows/ci.yml) runs tests and builds. The deployment repository additionally checks that the committed Pages assets match its source snapshot. Neither check changes Pages settings. GitHub's **pages build and deployment** run publishes [https://jup-asr-helper.github.io/](https://jup-asr-helper.github.io/) when the organization's `main` branch is updated. See GitHub's [publishing-source documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site).
 
 ## License

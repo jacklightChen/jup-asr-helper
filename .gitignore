@@ -9,3 +9,5 @@ dist/
 /app.js
 /style.css
 /.nojekyll
+/assets/
+/asset-manifest.json

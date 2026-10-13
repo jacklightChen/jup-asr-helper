@@ -23,7 +23,7 @@ export function createPhantomWallet(provider) {
   return provider?.isPhantom === true ? createInjectedWallet(provider, 'Phantom') : null;
 }
 export function createInjectedWallet(provider, name) {
-  if (!['Phantom', 'OKX Wallet', 'Backpack', 'Solflare'].includes(name) ||
+  if (!['Phantom', 'OKX Wallet', 'Backpack', 'Solflare', 'Trust Wallet'].includes(name) ||
     typeof provider?.connect !== 'function' || typeof provider?.signTransaction !== 'function') return null;
   let disconnected = false;
   const currentAccount = () => disconnected ? null : phantomAccount(provider);

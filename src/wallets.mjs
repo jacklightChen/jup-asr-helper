@@ -10,6 +10,7 @@ export function walletBrand(wallet) {
   if (wallet?.name === 'Backpack') return 'backpack';
   if (wallet?.name === 'Solflare') return 'solflare';
   if (wallet?.name === 'MetaMask') return 'metamask';
+  if (typeof wallet?.name === 'string' && /^(?:Trust|Trust Wallet)$/i.test(wallet.name)) return 'trust';
   if (typeof wallet?.name === 'string' && /^(?:OKX|OKX Wallet)$/i.test(wallet.name)) return 'okx';
   if (typeof wallet?.name === 'string' && /^(?:Binance|Binance Wallet|Binance Web3 Wallet)$/i.test(wallet.name)) return 'binance';
   return null;

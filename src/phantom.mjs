@@ -20,11 +20,15 @@ export function matchesPhantomAccount(provider, account, chain) {
     account.publicKey?.length === current.publicKey.length && current.publicKey.every((value, index) => value === account.publicKey[index]);
 }
 export function createPhantomWallet(provider) {
-  if (provider?.isPhantom !== true || typeof provider.connect !== 'function' || typeof provider.signTransaction !== 'function') return null;
+  return provider?.isPhantom === true ? createInjectedWallet(provider, 'Phantom') : null;
+}
+export function createInjectedWallet(provider, name) {
+  if (!['Phantom', 'OKX Wallet', 'Backpack', 'Solflare'].includes(name) ||
+    typeof provider?.connect !== 'function' || typeof provider?.signTransaction !== 'function') return null;
   let disconnected = false;
   const currentAccount = () => disconnected ? null : phantomAccount(provider);
   return {
-    name: 'Phantom',
+    name,
     chains: [SOLANA_MAINNET],
     get accounts() { const account = currentAccount(); return account ? [account] : []; },
     features: {
@@ -41,7 +45,8 @@ export function createPhantomWallet(provider) {
         async signTransaction({ account, chain, transaction }) {
           const current = currentAccount();
           if (!current || !matchesPhantomAccount(provider, account, chain)) throw new LocalizedError('errorAccountChanged');
-          const signed = await provider.signTransaction(VersionedTransaction.deserialize(transaction));
+          const unsigned = VersionedTransaction.deserialize(transaction);
+          const signed = (await provider.signTransaction(unsigned)) ?? unsigned;
           if (!currentAccount() || !matchesPhantomAccount(provider, account, chain)) throw new LocalizedError('errorAccountChangedSigning');
           return [{ signedTransaction: Uint8Array.from(signed.serialize()) }];
         },

@@ -2,9 +2,9 @@
 
 简体中文 · [English](README.md) · [GitHub 仓库](https://github.com/jacklightChen/jup-asr-helper) · [打开助手](https://jup-asr-helper.github.io/)
 
-开源领取助手：使用 **Binance Wallet 或 Phantom** 核对 Jupiter ASR 交易，并由用户授权签名。Binance 通过 Solana Wallet Standard 连接，Phantom 通过官方注入的 Solana provider 连接。可在支持的钱包手机 DApp 浏览器，或装有钱包扩展的电脑浏览器中打开。每位访问者连接自己的 Solana 账户。本项目是独立的社区工具，与 Binance、Phantom、Jupiter 均无隶属关系。
+开源领取助手：使用 **Binance Wallet、Phantom、OKX Wallet、Backpack、MetaMask 或 Solflare** 核对并领取 Jupiter ASR 奖励。可在支持的钱包手机 DApp 浏览器，或启用了钱包扩展的电脑浏览器中打开。每位访问者连接自己的 Solana 账户，并在钱包中授权每笔交易。本项目独立于 Jupiter 和所列钱包。
 
-GitHub Pages 网站地址：[jup-asr-helper.github.io](https://jup-asr-helper.github.io/)。手机端请在 Binance Wallet 或 Phantom 内打开该链接，以连接钱包。
+GitHub Pages 网站地址：[jup-asr-helper.github.io](https://jup-asr-helper.github.io/)。手机端请在支持的钱包内打开该链接，以连接钱包。
 
 ## 当前支持情况
 
@@ -14,12 +14,16 @@ GitHub Pages 网站地址：[jup-asr-helper.github.io](https://jup-asr-helper.gi
 
 | 钱包 | 连接方式 | 验证情况 |
 | --- | --- | --- |
-| Binance Wallet | 手机 DApp 浏览器；提供所需 Solana Wallet Standard 功能的电脑扩展 | 用户已于 2026 年 10 月 13 日确认手机领取成功；电脑扩展领取尚未测试 |
-| Phantom | 手机内置浏览器或电脑扩展注入的官方 Solana provider | 使用随机生成的测试交易验证适配器，并执行相同的签名检查；尚未确认真实 Phantom 领取成功 |
+| Binance Wallet | Solana Wallet Standard | 用户已于 2026 年 10 月 13 日确认手机领取成功 |
+| Phantom | Wallet Standard 或官方 `window.phantom.solana` provider | 已测试适配器；真实领取尚未确认 |
+| OKX Wallet | Wallet Standard 或 `window.okxwallet.solana` provider | 已测试适配器；真实领取尚未确认 |
+| Backpack | Wallet Standard 或 `window.backpack` provider | 已测试适配器；真实领取尚未确认 |
+| MetaMask | 原生 Solana Wallet Standard 注册 | 已测试主网发现；真实领取尚未确认 |
+| Solflare | Wallet Standard 或 `window.solflare` provider | 已测试适配器；真实领取尚未确认 |
 
-Binance 钱包发现要求支持 Solana 主网，并提供 `standard:connect` 和 `solana:signTransaction`。Phantom 会检查 `window.phantom.solana.isPhantom`，并要求注入的 provider 提供 `connect` 和 `signTransaction`。检测到多个支持的钱包时，连接前在页面的钱包选择器中选择要使用的钱包。参见 [Binance Solana 官方接口文档](https://developers.binance.com/en/docs/products/web3-connect/solana-provider)和 [Phantom 官方 provider 检测文档](https://docs.phantom.com/solana/detecting-the-provider)。
+钱包发现要求名称匹配、支持 Solana 主网，并提供 `standard:connect` 和只签名的 `solana:signTransaction`。同时支持 `solana:mainnet` 别名和主网 CAIP-2 标识。只有 EVM 接口的 MetaMask 无法连接。检测到多个支持的钱包时，先选择钱包再连接。注入适配器调用各钱包的官方 Solana 交易接口，所有返回的签名都经过相同的本地消息与签名核验，再由 Jupiter `postClaim` 提交。
 
-Phantom 当前的 Wallet Standard 接口不提供只签名的 `signTransaction`，[官方注入的 provider 则提供这一方法](https://docs.phantom.com/solana/sending-a-transaction)。本工具适配该 provider 的 legacy 和 v0 交易，在本地核对签名及交易消息未被修改后，通过 Jupiter `postClaim` 提交，不调用 Phantom 的直接签名广播路径。实现参考了 [Phantom 钱包适配器](https://github.com/anza-xyz/wallet-adapter/blob/master/packages/wallets/phantom/src/adapter.ts)的 provider 用法。如果已安装的钱包版本不提供只签名接口，页面不会启用签名。
+集成参考：[Binance Solana 接口](https://developers.binance.com/en/docs/products/web3-connect/solana-provider)、[Phantom provider](https://docs.phantom.com/solana/sending-a-transaction)、[OKX Solana provider](https://web3.okx.com/build/dev-docs/sdks/chains/solana/provider)、[Backpack](https://docs.backpack.app/)、[MetaMask Wallet Standard 功能](https://docs.metamask.io/metamask-connect/solana/reference/methods/)、[Solflare SDK](https://docs.solflare.com/solflare/technical/integrate-solflare/solflare-wallet-sdk)。
 
 当前活动元数据设置了 `onlyClaimableThroughJup: true`。页面会同时展示官方标记和已反馈的 Binance Wallet 领取成功情况。工具使用钱包的真实账户与签名，不伪装成 Jupiter Wallet，也不修改领取资格。之后的领取仍可能受接口可用性、钱包版本及个人资格影响。
 
@@ -27,7 +31,7 @@ Phantom 当前的 Wallet Standard 接口不提供只签名的 `signTransaction`�
 
 ## 钱包使用步骤
 
-1. 手机端在 **Binance Wallet 的 DApp 浏览器**或 **Phantom 的内置浏览器**中打开已部署网站的 HTTPS 地址；电脑端在启用了支持的钱包扩展的浏览器中打开。不同版本的菜单名称可能有区别；没有注入支持钱包的普通浏览器无法连接。
+1. 手机端在 **支持钱包的 DApp 浏览器**中打开已部署网站的 HTTPS 地址；电脑端在启用了支持的钱包扩展的浏览器中打开。不同版本的菜单名称可能有区别；没有注入支持钱包的普通浏览器无法连接。
 2. 选择 **简体中文 / English**。若检测到多个钱包，先选择要使用的钱包，再点击 **连接钱包**，授权获得奖励的 Solana 账户。页面会查询这个账户的奖励。
 3. 点击 **准备交易**，核对奖励数量、质押影响、手续费付款账户、调用程序与 SOL 费用估算。
 4. 点击 **签名并提交**按钮，在所选钱包中查看交易并确认。钱包里的明确授权是最终签名步骤。
@@ -49,7 +53,7 @@ Phantom 当前的 Wallet Standard 接口不提供只签名的 `signTransaction`�
 
 ## 隐私
 
-无需助记词、私钥、Binance 交易所 API Key 或 Reown Project ID。前端没有分析统计或应用后端，只在 `localStorage` 保存界面语言；钱包连接与交易状态保留在当前页面内存中。Jupiter 会在查询时收到钱包公开地址，在用户提交时收到已签名交易。托管及 API 提供商可能保留自己的请求日志。仓库不包含个人奖励数量或已签名交易；下方自愿捐款地址为公开信息。
+无需助记词、私钥、Binance 交易所 API Key 或 Reown Project ID。前端没有分析统计或应用后端，只在 `localStorage` 保存界面语言；钱包连接与交易状态保留在当前页面内存中。Jupiter 会在领取查询时收到钱包公开地址，在提交时收到已签名领取交易。自愿捐赠通过 PublicNode 的 Solana 主网 RPC 查询余额并提交，该服务会收到公开地址和已签名的捐赠转账。托管及 API 提供商可能保留自己的请求日志。仓库不包含个人奖励数量或已签名交易；下方自愿捐款地址为公开信息。
 
 ## 开发
 
@@ -67,7 +71,7 @@ npm run build
 python3 -m http.server 8080 --directory dist
 ```
 
-在开发电脑打开 `http://localhost:8080`，支持的钱包电脑扩展可能在 localhost 页面注入接口。连接真实手机钱包时，请部署为 HTTPS，并在 Binance Wallet 或 Phantom 内打开网站；手机的 `localhost` 指向手机本身。测试不会请求真实钱包签名，也不会广播交易。
+在开发电脑打开 `http://localhost:8080`，支持的钱包电脑扩展可能在 localhost 页面注入接口。连接真实手机钱包时，请部署为 HTTPS，并在支持的钱包内打开网站；手机的 `localhost` 指向手机本身。测试不会请求真实钱包签名，也不会广播交易。
 
 ## API 流程
 
@@ -110,4 +114,10 @@ Solana 捐款地址：
 5QDviToVpnePujox1tm3cwSsAwp9WKChiaJnWWSbHS3H
 ```
 
-捐赠为自愿支持，与 ASR 领取分开。
+连接钱包后，可使用 **捐赠 0.01 SOL** 或 **捐赠 0.05 SOL** 按钮。每次都会单独向上方地址转入所选 SOL，另需支付网络费，并由钱包授权确认。工具核对收款地址、固定金额、原始交易消息与签名后，通过 [PublicNode Solana 主网 RPC](https://solana.publicnode.com/) 提交。收到交易编号不等于确认成功，请使用 **查询捐赠状态** 或链上链接核实。提交或确认结果未知时，按钮保持禁用，避免重复转账；不会自动重新发送。参见 Solana [提交交易](https://solana.com/docs/rpc/http/sendtransaction)与[确认状态](https://solana.com/docs/rpc/http/getsignaturestatuses)文档。
+
+捐赠完全自愿，不影响领取资格。公共 RPC 可用性及限流可能影响按钮，也可以在钱包中手动转账。
+
+## 免责声明
+
+本工具是独立社区项目，按现状提供，不构成投资建议。接口、钱包版本与个人资格可能影响领取结果；签名前请自行核对网络、收款地址、金额和质押操作。链上确认的转账无法由本工具撤回。捐赠与 ASR 领取分开。

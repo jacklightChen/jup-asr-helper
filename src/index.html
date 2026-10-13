@@ -5,17 +5,17 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="color-scheme" content="dark">
   <meta name="referrer" content="no-referrer">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src https://datapi.jup.ag; img-src 'self' data:; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src https://datapi.jup.ag https://solana-rpc.publicnode.com; img-src 'self' data:; base-uri 'none'; form-action 'none'; object-src 'none'">
   <title data-i18n="pageTitle">JUP ASR · 钱包签名助手</title>
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
   <main>
-    <header class="topbar"><a class="wordmark" href="#">ASR<span>HELPER</span></a><div class="topbar-controls"><span class="network"><i></i> <span data-i18n="mainnet">Solana 主网</span></span><div class="language-switch" role="group" aria-label="Language / 语言"><button type="button" data-language="zh" lang="zh-CN" aria-pressed="true">中文</button><button type="button" data-language="en" lang="en" aria-pressed="false">EN</button></div></div></header>
+    <header class="topbar"><a class="wordmark" href="#">ASR<span>HELPER</span></a><div class="topbar-controls"><a class="source-link" href="https://github.com/jacklightChen/jup-asr-helper" target="_blank" rel="noopener noreferrer" data-i18n="sourceCode">开源仓库 ↗</a><span class="network"><i></i> <span data-i18n="mainnet">Solana 主网</span></span><div class="language-switch" role="group" aria-label="Language / 语言"><button type="button" data-language="zh" lang="zh-CN" aria-pressed="true">中文</button><button type="button" data-language="en" lang="en" aria-pressed="false">EN</button></div></div></header>
     <section class="hero">
       <div class="eyebrow" data-i18n="heroEyebrow">社区接口领取助手</div>
-      <h1><span data-i18n="heroTitle1">领取 ASR，</span><br><span data-i18n="heroTitle2">在钱包中确认。</span></h1>
-      <p class="intro"><span data-i18n="intro1">支持 Binance Wallet 和 Phantom。</span><br><span data-i18n="intro2">连接、核对交易，再由你授权签名。</span></p>
+      <h1><span data-i18n="heroTitle1">领取 ASR，</span><br><span data-i18n="heroTitle2">无需 Jupiter Wallet。</span></h1>
+      <p class="intro"><span data-i18n="intro1">支持 Binance Wallet、Phantom、OKX Wallet、Backpack、MetaMask 和 Solflare。</span><br><span data-i18n="intro2">连接、核对交易，再由你授权签名。</span></p>
       <a id="phantom-open" class="wallet-open" data-i18n="openInPhantom" hidden>在 Phantom 中打开 ↗</a>
       <div class="orbit" aria-hidden="true"><div class="orbit-ring"></div><span>JUP</span><i></i></div>
     </section>
@@ -75,8 +75,14 @@
       <code id="donation-address">5QDviToVpnePujox1tm3cwSsAwp9WKChiaJnWWSbHS3H</code>
       <button id="copy-donation" type="button" class="button secondary" data-i18n="copyDonation">复制地址</button>
       <p id="donation-copy-status" class="micro" aria-live="polite"></p>
+      <div class="donation-actions"><button id="donate-small" type="button" class="button secondary" data-i18n="donateSmall" disabled>捐赠 0.01 SOL</button><button id="donate-large" type="button" class="button secondary" data-i18n="donateLarge" disabled>捐赠 0.05 SOL</button></div>
+      <p class="micro" data-i18n="donationHint">连接钱包后可捐赠。另需支付网络费，转账前请在钱包中核对金额和上方收款地址。捐赠不影响领取资格。</p>
+      <p id="donation-status" class="micro" aria-live="polite"></p>
+      <a id="donation-transaction" target="_blank" rel="noopener noreferrer" data-i18n="viewDonation" hidden>查看捐赠交易 ↗</a>
+      <button id="refresh-donation" type="button" class="button secondary" data-i18n="refreshDonation" hidden>查询捐赠状态</button>
     </section>
-    <footer><p data-i18n="footerCommunity">社区开源助手，使用 Wallet Standard 和 Phantom 官方接口与 Jupiter 活动 API；与 Binance、Phantom 或 Jupiter 无隶属关系。</p><p data-i18n="footerPrivacy">本页不会请求私钥或助记词。奖励由官方交易执行。</p><div><a href="https://developers.binance.com/en/docs/products/web3-connect/solana-provider" target="_blank" rel="noopener noreferrer" data-i18n="binanceDocs">Binance 接口文档 ↗</a><span>·</span><a href="https://docs.phantom.com/solana/sending-a-transaction" target="_blank" rel="noopener noreferrer" data-i18n="phantomDocs">Phantom 接口文档 ↗</a><span>·</span><a href="https://jup.ag/rewards/asr-2026-q3" target="_blank" rel="noopener noreferrer">Jupiter ↗</a></div></footer>
+    <footer><p data-i18n="footerCommunity">社区开源助手，使用 Wallet Standard 和 Phantom 官方接口与 Jupiter 活动 API；与所列钱包或 Jupiter 无隶属关系。</p><p data-i18n="footerPrivacy">本页不会请求私钥或助记词。奖励由官方交易执行。</p><div><a href="https://developers.binance.com/en/docs/products/web3-connect/solana-provider" target="_blank" rel="noopener noreferrer" data-i18n="binanceDocs">Binance 接口文档 ↗</a><span>·</span><a href="https://docs.phantom.com/solana/sending-a-transaction" target="_blank" rel="noopener noreferrer" data-i18n="phantomDocs">Phantom 接口文档 ↗</a><span>·</span><a href="https://jup.ag/rewards/asr-2026-q3" target="_blank" rel="noopener noreferrer">Jupiter ↗</a></div></footer>
+    <section class="disclaimer" aria-labelledby="disclaimer-title"><h2 id="disclaimer-title" data-i18n="disclaimerTitle">免责声明</h2><p data-i18n="disclaimerText">本工具是独立社区项目，与所列钱包或 Jupiter 无隶属关系，按现状提供，不构成投资建议。接口、钱包版本与个人资格可能影响领取结果；签名前请自行核对网络、收款地址、金额和质押操作。链上确认的转账无法由本工具撤回。捐赠完全自愿，与 ASR 领取分开。</p></section>
   </main>
   <script type="module" src="./app.js"></script>
 </body>

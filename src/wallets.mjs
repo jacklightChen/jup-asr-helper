@@ -1,16 +1,23 @@
 export const SOLANA_MAINNET = 'solana:mainnet';
+export const SOLANA_MAINNET_GENESIS = 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp';
+const MAINNET_CHAINS = [SOLANA_MAINNET, SOLANA_MAINNET_GENESIS];
+export const mainnetChain = account => MAINNET_CHAINS.find(chain => account?.chains?.includes(chain)) ?? null;
 
 // Wallet names are discovery hints, not cryptographic proof of the extension's identity.
 // Accept the known product names only, and verify the required Wallet Standard features.
 export function walletBrand(wallet) {
   if (wallet?.name === 'Phantom') return 'phantom';
+  if (wallet?.name === 'Backpack') return 'backpack';
+  if (wallet?.name === 'Solflare') return 'solflare';
+  if (wallet?.name === 'MetaMask') return 'metamask';
+  if (typeof wallet?.name === 'string' && /^(?:OKX|OKX Wallet)$/i.test(wallet.name)) return 'okx';
   if (typeof wallet?.name === 'string' && /^(?:Binance|Binance Wallet|Binance Web3 Wallet)$/i.test(wallet.name)) return 'binance';
   return null;
 }
 
 export function supportedWallets(wallets) {
   return wallets.filter(wallet => walletBrand(wallet) &&
-    Array.isArray(wallet.chains) && wallet.chains.includes(SOLANA_MAINNET) &&
+    Array.isArray(wallet.chains) && mainnetChain(wallet) &&
     typeof wallet.features?.['standard:connect']?.connect === 'function' &&
     typeof wallet.features?.['solana:signTransaction']?.signTransaction === 'function');
 }

@@ -11,13 +11,14 @@
   "dependencies": {
     "@solana/web3.js": "1.98.4",
     "@wallet-standard/app": "1.1.1",
+    "bs58": "4.0.1",
     "buffer": "6.0.3",
     "tweetnacl": "1.0.3"
   },
   "devDependencies": {
     "esbuild": "0.25.10"
   },
-  "description": "Binance Wallet and Phantom helper for Jupiter ASR claims",
+  "description": "Solana wallet helper for Jupiter ASR claims",
   "license": "MIT",
   "engines": {
     "node": ">=22"

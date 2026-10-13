@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Keypair, SystemProgram, TransactionMessage, VersionedTransaction } from '@solana/web3.js';
 import { verifySignedTransaction, sameBytes } from '../src/transaction.mjs';
-import { supportedWallets, walletBrand, selectWallet, SOLANA_MAINNET } from '../src/wallets.mjs';
-import { createPhantomWallet, phantomAccount, matchesPhantomAccount } from '../src/phantom.mjs';
+import { supportedWallets, walletBrand, selectWallet, SOLANA_MAINNET, SOLANA_MAINNET_GENESIS, mainnetChain } from '../src/wallets.mjs';
+import { createPhantomWallet, createInjectedWallet, phantomAccount, matchesPhantomAccount } from '../src/phantom.mjs';
 
 const neverCall = () => { throw new Error('Discovery tests must not request connection or signing'); };
 const wallet = name => ({ name, chains: [SOLANA_MAINNET], features: {
@@ -22,6 +22,36 @@ test('allowlist requires exact product names and actual Solana sign-only feature
   assert.equal(walletBrand(wallet('Binance')), 'binance');
   assert.equal(walletBrand(wallet('phantom')), null);
 });
+
+test('additional wallets require sign-only features and recognize both Solana mainnet chain names', () => {
+  const additions = ['OKX Wallet', 'Backpack', 'MetaMask', 'Solflare'].map(wallet);
+  additions[2].chains = [SOLANA_MAINNET_GENESIS];
+  assert.deepEqual(supportedWallets(additions), additions);
+  assert.equal(mainnetChain(additions[2]), SOLANA_MAINNET_GENESIS);
+  assert.equal(mainnetChain({ chains: ['solana:devnet'] }), null);
+  assert.equal(walletBrand(wallet('MetaMask Impostor')), null);
+  assert.equal(walletBrand(wallet('OKX Scam Wallet')), null);
+  assert.deepEqual(supportedWallets([{ ...wallet('MetaMask'), features: { 'standard:connect': { connect: neverCall } } }]), []);
+});
+
+for (const name of ['OKX Wallet', 'Backpack', 'Solflare']) {
+  test(`${name} injected sign-only adapter preserves transaction bytes and verifies its output`, async () => {
+    const user = Keypair.generate();
+    const tx = new VersionedTransaction(new TransactionMessage({ payerKey: user.publicKey,
+      recentBlockhash: Keypair.generate().publicKey.toBase58(),
+      instructions: [SystemProgram.transfer({ fromPubkey: user.publicKey, toPubkey: Keypair.generate().publicKey, lamports: 1 })]
+    }).compileToV0Message());
+    const bytes = Uint8Array.from(tx.serialize());
+    const provider = { publicKey: user.publicKey, connect: async () => {},
+      signTransaction: async transaction => { transaction.sign([user]); return transaction; } };
+    const adapter = createInjectedWallet(provider, name);
+    const { accounts } = await adapter.features['standard:connect'].connect();
+    const [output] = await adapter.features['solana:signTransaction'].signTransaction({ account: accounts[0], chain: SOLANA_MAINNET, transaction: bytes });
+    assert.ok(verifySignedTransaction({ tx, bytes, signerIndex: 0, message: Uint8Array.from(tx.message.serialize()) }, output.signedTransaction, user.publicKey.toBase58()));
+    provider.publicKey = Keypair.generate().publicKey;
+    await assert.rejects(adapter.features['solana:signTransaction'].signTransaction({ account: accounts[0], chain: SOLANA_MAINNET, transaction: bytes }));
+  });
+}
 
 test('multiple wallets require a visible choice and preserve object identity across discovery changes', () => {
   const first = wallet('Phantom'), second = wallet('Phantom'), binance = wallet('Binance Wallet');

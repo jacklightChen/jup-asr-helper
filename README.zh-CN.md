@@ -22,7 +22,7 @@ GitHub Pages 网站地址：[jup-asr-helper.github.io](https://jup-asr-helper.gi
 | Solflare | Wallet Standard 或 `window.solflare` provider | 已测试适配器；真实领取尚未确认 |
 | Trust Wallet | 官方 `Trust` Wallet Standard 注册；注入的 Solana provider 回退 | 已测试适配器；真实领取尚未确认 |
 
-钱包发现要求名称匹配、支持 Solana 主网，并提供 `standard:connect` 和只签名的 `solana:signTransaction`。同时支持 `solana:mainnet` 别名和主网 CAIP-2 标识。只有 EVM 接口的 MetaMask 无法连接。检测到多个支持的钱包时，先选择钱包再连接。注入适配器调用各钱包的官方 Solana 交易接口，所有返回的签名都经过相同的本地消息与签名核验，再由 Jupiter `postClaim` 提交。
+钱包发现要求名称匹配、支持 Solana 主网，并提供 `standard:connect` 和只签名的 `solana:signTransaction`。同时支持 `solana:mainnet` 别名和主网 CAIP-2 标识。只有 EVM 接口的 MetaMask 无法连接。连接弹窗始终显示全部支持钱包，包括 Binance Wallet。已检测到 Solana 接口的钱包可以直接点击卡片连接；未检测到时，显示在钱包内打开页面或启用扩展的说明。同一钱包有多个实例时，可选择对应卡片。注入适配器调用各钱包的官方 Solana 交易接口，所有返回的签名都经过相同的本地消息与签名核验，再由 Jupiter `postClaim` 提交。
 
 集成参考：[Binance Solana 接口](https://developers.binance.com/en/docs/products/web3-connect/solana-provider)、[Phantom provider](https://docs.phantom.com/solana/sending-a-transaction)、[OKX Solana provider](https://web3.okx.com/build/dev-docs/sdks/chains/solana/provider)、[Backpack](https://docs.backpack.app/)、[MetaMask Wallet Standard 功能](https://docs.metamask.io/metamask-connect/solana/reference/methods/)、[Trust Wallet Solana provider](https://github.com/trustwallet/trust-web3-provider/tree/main/packages/solana)、[Solflare SDK](https://docs.solflare.com/solflare/technical/integrate-solflare/solflare-wallet-sdk)。
 
@@ -33,7 +33,7 @@ GitHub Pages 网站地址：[jup-asr-helper.github.io](https://jup-asr-helper.gi
 ## 钱包使用步骤
 
 1. 手机端在 **支持钱包的 DApp 浏览器**中打开已部署网站的 HTTPS 地址；电脑端在启用了支持的钱包扩展的浏览器中打开。不同版本的菜单名称可能有区别；没有注入支持钱包的普通浏览器无法连接。
-2. 选择 **简体中文 / English**。若检测到多个钱包，先选择要使用的钱包，再点击 **连接钱包**，授权获得奖励的 Solana 账户。页面会查询这个账户的奖励。
+2. 选择 **简体中文 / English**，点击 **连接钱包**，再在弹窗中选择钱包卡片，授权获得奖励的 Solana 账户。页面会查询这个账户的奖励。
 3. 点击 **准备交易**，核对奖励数量、质押影响、手续费付款账户、调用程序与 SOL 费用估算。
 4. 点击 **签名并提交**按钮，在所选钱包中查看交易并确认。钱包里的明确授权是最终签名步骤。
 5. 点击 **查询领取状态**，并检查链上交易结果。如果提交请求超时，请先查奖励状态及钱包交易记录；页面不会自动重复提交。
@@ -66,7 +66,7 @@ npm test
 npm run build
 ```
 
-构建产物包括 `dist/index.html`、`dist/assets/` 中按内容哈希命名的脚本和样式，以及 `dist/asset-manifest.json`，并保留 `app.js`、`style.css` 兼容副本。资源哈希避免缓存的 HTML 与脚本、样式混用版本。`npm run build:pages` 会同步更新部署仓库根目录资源，并保留旧哈希文件供缓存页面使用。资源采用相对路径，支持组织主页和项目子路径。查看本地布局：
+构建产物包括 `dist/index.html`、`dist/assets/` 中按内容哈希命名的脚本和样式、`dist/icons/` 中的钱包图标，以及 `dist/asset-manifest.json`，并保留 `app.js`、`style.css` 兼容副本。资源哈希避免缓存的 HTML 与脚本、样式混用版本。`npm run build:pages` 会同步更新部署仓库根目录资源，并保留旧哈希文件供缓存页面使用。资源采用相对路径，支持组织主页和项目子路径。查看本地布局：
 
 ```sh
 python3 -m http.server 8080 --directory dist

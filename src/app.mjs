@@ -3,7 +3,7 @@ import { getWallets } from '@wallet-standard/app';
 import { PublicKey } from '@solana/web3.js';
 import { inspectPrepared, verifySignedTransaction, sameBytes, CURRENT_CAMPAIGN } from './transaction.mjs';
 import { STORAGE_KEY, chooseLanguage, getLanguage, getLocale, setLanguage, translate as t, LocalizedError, localizedErrorMessage } from './i18n.mjs';
-import { supportedWallets, walletBrand, selectWallet, mainnetChain } from './wallets.mjs';
+import { supportedWallets, walletBrand, selectWallet, mainnetChain, WALLET_CATALOG } from './wallets.mjs';
 import { createPhantomWallet, createInjectedWallet } from './phantom.mjs';
 
 const API = 'https://datapi.jup.ag/rewards/v1/campaigns/asr-2026-q3';
@@ -69,12 +69,11 @@ function campaignOpen() {
 
 function updateButtons() {
   const canPrepare = state.account && state.stats && state.stats.unclaimedAmount > 0 && campaignOpen();
-  $('connect').disabled = state.busy || state.submitted || (state.availableWallets.length > 1 && !state.selectedWallet);
+  $('connect').disabled = state.busy || state.submitted;
   $('prepare').disabled = state.busy || state.submitted || !canPrepare;
   $('sign').disabled = state.busy || state.submitted || !state.prepared || Date.now() - state.preparedAt >= MAX_PREPARE_AGE_MS;
   $('refresh-status').disabled = state.busy || !state.account;
   $('account-choice').disabled = state.busy || state.submitted;
-  $('wallet-choice').disabled = state.busy || state.submitted;
   const donationPending = state.donation?.status === 'pending';
   $('donate-small').disabled = $('donate-large').disabled = state.busy || !state.account || donationPending;
   $('refresh-donation').disabled = state.busy;
@@ -110,12 +109,6 @@ function detectedWallets() {
   }
   return wallets;
 }
-const walletIds = new WeakMap();
-let nextWalletId = 0;
-function walletId(wallet) {
-  if (!walletIds.has(wallet)) walletIds.set(wallet, `wallet-${++nextWalletId}`);
-  return walletIds.get(wallet);
-}
 function clearAccount(allocationKey = 'allocationInitial') {
   state.generation++;
   state.unsubscribe?.(); state.unsubscribe = null;
@@ -136,20 +129,54 @@ function updateDiscovery() {
     clearAccount('allocationWalletChanged');
     showStatus('statusWalletChanged', 'reconnectPrepare');
   }
-  const placeholder = document.createElement('option'); placeholder.value = '';
-  placeholder.textContent = t('chooseWallet'); placeholder.disabled = true;
-  const options = found.map((wallet, index) => {
-    const option = document.createElement('option'); option.value = walletId(wallet);
-    option.textContent = found.filter(item => item.name === wallet.name).length > 1 ? `${wallet.name} (${index + 1})` : wallet.name;
-    return option;
-  });
-  $('wallet-choice').replaceChildren(placeholder, ...options);
-  $('wallet-choice').value = state.selectedWallet ? walletId(state.selectedWallet) : '';
-  $('wallet-choice-wrap').hidden = found.length < 2;
+  renderWalletPicker();
   if (found.length) setText('wallet-discovery', () => t('walletDetected', { wallets: found.map(wallet => wallet.name).join(getLanguage() === 'zh' ? '、' : ', ') }));
   else if (all.length) setText('wallet-discovery', 'walletUnsupported');
   else setText('wallet-discovery', 'walletBrowserRequired');
   updateButtons();
+}
+
+function renderWalletPicker() {
+  const cards = [];
+  for (const item of WALLET_CATALOG) {
+    const matches = state.availableWallets.filter(wallet => walletBrand(wallet) === item.brand);
+    for (const [index, wallet] of (matches.length ? matches : [null]).entries()) {
+      const button = document.createElement('button'); button.type = 'button';
+      button.className = `wallet-card${item.brand === 'binance' ? ' wallet-featured' : ''}`;
+      const icon = document.createElement('img'); icon.src = `./icons/${item.brand}.svg`; icon.alt = ''; icon.width = 44; icon.height = 44;
+      const title = document.createElement('span'); title.className = 'wallet-card-name';
+      title.textContent = item.name + (matches.length > 1 ? ` (${index + 1})` : '');
+      const subtitle = document.createElement('span'); subtitle.className = 'wallet-card-detail';
+      subtitle.textContent = t(wallet ? 'walletAvailable' : 'walletNotDetected');
+      button.append(icon, title, subtitle);
+      if (item.brand === 'binance') {
+        const badge = document.createElement('span'); badge.className = 'wallet-tested'; badge.textContent = t('claimTested'); button.append(badge);
+      }
+      button.addEventListener('click', () => {
+        if (state.busy || state.submitted) return;
+        if (!wallet || !detectedWallets().includes(wallet)) {
+          $('wallet-help').hidden = false;
+          setText('wallet-help-text', 'walletOpenHelp', { wallet: item.name });
+          $('wallet-official').href = item.url;
+          setText('wallet-official', 'walletOfficial', { wallet: item.name });
+          $('wallet-copy-status').textContent = ''; translatedNodes.delete('wallet-copy-status');
+          return;
+        }
+        if (wallet !== state.selectedWallet) { state.selectedWallet = wallet; clearAccount('allocationWalletChanged'); }
+        $('wallet-picker').close();
+        run(connect);
+      });
+      cards.push(button);
+    }
+  }
+  $('wallet-grid').replaceChildren(...cards);
+}
+
+function openWalletPicker() {
+  if (state.busy || state.submitted) return;
+  updateDiscovery(); $('wallet-help').hidden = true;
+  document.body.classList.add('wallet-modal-open');
+  $('wallet-picker').showModal();
 }
 
 async function api(path = '', body) {
@@ -434,18 +461,22 @@ $('donate-small').addEventListener('click', () => run(() => donate('0.01')));
 $('donate-large').addEventListener('click', () => run(() => donate('0.05')));
 $('refresh-donation').addEventListener('click', () => run(refreshDonation));
 
-$('connect').addEventListener('click', () => run(connect));
+$('connect').addEventListener('click', openWalletPicker);
+$('wallet-picker-close').addEventListener('click', () => $('wallet-picker').close());
+$('wallet-picker').addEventListener('close', () => document.body.classList.remove('wallet-modal-open'));
+$('wallet-picker').addEventListener('click', event => {
+  if (event.target !== $('wallet-picker')) return;
+  const rect = $('wallet-picker').getBoundingClientRect();
+  if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) $('wallet-picker').close();
+});
+$('wallet-copy-url').addEventListener('click', async () => {
+  const url = new URL('https://jup-asr-helper.github.io/'); url.searchParams.set('lang', getLanguage());
+  try { await navigator.clipboard.writeText(url.href); setText('wallet-copy-status', 'walletUrlCopied'); }
+  catch { setText('wallet-copy-status', () => url.href); }
+});
 $('prepare').addEventListener('click', () => run(prepare));
 $('sign').addEventListener('click', () => run(signAndSubmit));
 $('refresh-status').addEventListener('click', () => run(verifyStatus));
-$('wallet-choice').addEventListener('change', () => {
-  if (state.busy || state.submitted) return;
-  const selected = state.availableWallets.find(wallet => walletId(wallet) === $('wallet-choice').value);
-  if (!selected || selected === state.selectedWallet) return;
-  state.selectedWallet = selected;
-  clearAccount('allocationWalletChanged');
-  showStatus('statusWalletChanged', 'walletSelectedMessage', '', { wallet: selected.name });
-});
 $('account-choice').addEventListener('change', () => {
   const account = state.accounts.find(item => item.address === $('account-choice').value);
   if (account) run(() => useAccount(account));

@@ -1,6 +1,11 @@
 export const STORAGE_KEY = 'jup-asr-helper-language';
 export const translations = Object.freeze({
   zh: Object.freeze({
+    walletPickerTitle: '连接钱包', walletPickerIntro: '选择你的 Solana 钱包', closeWalletPicker: '关闭钱包选择',
+    walletAvailable: '已检测到 · 点击连接', walletNotDetected: '打开钱包或安装扩展', claimTested: '领取已实测',
+    walletOpenHelp: '当前浏览器未检测到 {wallet} 的 Solana 接口。手机端请复制本站网址，在该钱包的 DApp 浏览器内打开；电脑端请安装或启用对应的 Solana 扩展。',
+    walletOfficial: '{wallet} 官网 ↗', copyPageUrl: '复制页面网址', walletUrlCopied: '网址已复制，请在钱包 DApp 浏览器打开。',
+    walletPickerNote: '手机端请在钱包的 DApp 浏览器内打开。捐赠与领取都需要你在钱包中确认。',
     sourceCode: '开源仓库 ↗', donateSmall: '捐赠 0.01 SOL', donateLarge: '捐赠 0.05 SOL',
     donationHint: '连接钱包后可捐赠。另需支付网络费，转账前请在钱包中核对金额和上方收款地址。捐赠不影响领取资格。',
     viewDonation: '查看捐赠交易 ↗', refreshDonation: '查询捐赠状态',
@@ -81,6 +86,11 @@ export const translations = Object.freeze({
     errorUnknownValidation: '交易核验失败，已停止。{detail}',
   }),
   en: Object.freeze({
+    walletPickerTitle: 'Connect', walletPickerIntro: 'Choose your Solana wallet', closeWalletPicker: 'Close wallet picker',
+    walletAvailable: 'Detected · Connect', walletNotDetected: 'Open wallet or install extension', claimTested: 'Claim tested',
+    walletOpenHelp: 'No {wallet} Solana interface was detected. On mobile, copy this page URL and open it in the wallet’s DApp browser. On desktop, install or enable its Solana extension.',
+    walletOfficial: '{wallet} website ↗', copyPageUrl: 'Copy page URL', walletUrlCopied: 'URL copied. Open it in your wallet’s DApp browser.',
+    walletPickerNote: 'On mobile, open this page in your wallet’s DApp browser. Claims and donations each require your wallet approval.',
     sourceCode: 'Source on GitHub ↗', donateSmall: 'Donate 0.01 SOL', donateLarge: 'Donate 0.05 SOL',
     donationHint: 'Connect your wallet to donate. A network fee is extra. Review the amount and recipient above in your wallet before confirming. Donations do not affect claim eligibility.',
     viewDonation: 'View donation transaction ↗', refreshDonation: 'Check donation status',
@@ -103,7 +113,7 @@ export const translations = Object.freeze({
     donationNetwork: 'Solana donation address', copyDonation: 'Copy address',
     donationCopied: 'Address copied.', donationCopyFailed: 'Automatic copying is unavailable. Copy the address above manually.',
     pageTitle: 'JUP ASR · Wallet Signing Helper', mainnet: 'Solana Mainnet',
-    heroEyebrow: 'ASR CLAIM HELPER', heroTitle1: 'Claim ASR.', heroTitle2: 'No Jupiter Wallet required.',
+    heroEyebrow: 'ASR CLAIM HELPER', heroTitle1: 'Claim ASR.', heroTitle2: 'Without Jupiter Wallet.',
     intro1: 'Supports Binance Wallet, Phantom, OKX Wallet, Backpack, MetaMask, Solflare, and Trust Wallet.', intro2: 'Connect, review the transaction, then authorize signing.',
     campaignInfo: 'Campaign information', officialCampaign: 'Official campaign ↗', rewardLabel: 'Available · Staked JUP',
     allocationInitial: 'Connect your wallet to check your reward.', campaignLoading: 'Loading the official claim window…',

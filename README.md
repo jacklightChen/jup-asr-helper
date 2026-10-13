@@ -22,7 +22,7 @@ Only the **ASR 2026 Q3** campaign (`asr-2026-q3`) is supported. Its published cl
 | Solflare | Wallet Standard or `window.solflare` provider | Adapter tested; live claim not yet confirmed |
 | Trust Wallet | Official `Trust` Wallet Standard registration; injected Solana provider fallback | Adapter tested; live claim not yet confirmed |
 
-Wallet discovery requires a recognized name, Solana mainnet, `standard:connect`, and sign-only `solana:signTransaction`. Both the `solana:mainnet` alias and the mainnet CAIP-2 identifier are supported. An EVM-only MetaMask provider is insufficient. With multiple supported wallets, select one before connecting. Injected adapters accept the wallets' official Solana transaction methods, and all signed output passes the same local message and signature checks before Jupiter's `postClaim` submission.
+Wallet discovery requires a recognized name, Solana mainnet, `standard:connect`, and sign-only `solana:signTransaction`. Both the `solana:mainnet` alias and the mainnet CAIP-2 identifier are supported. An EVM-only MetaMask provider is insufficient. The Connect dialog always lists all supported wallets, including Binance Wallet. Detected Solana interfaces connect from their cards; unavailable wallets show instructions to open the page inside the wallet or enable its extension. With multiple detected instances of the same wallet, choose the desired card. Injected adapters accept the wallets' official Solana transaction methods, and all signed output passes the same local message and signature checks before Jupiter's `postClaim` submission.
 
 Integration references: [Binance Solana interface](https://developers.binance.com/en/docs/products/web3-connect/solana-provider), [Phantom provider](https://docs.phantom.com/solana/sending-a-transaction), [OKX Solana provider](https://web3.okx.com/build/dev-docs/sdks/chains/solana/provider), [Backpack](https://docs.backpack.app/), [MetaMask Wallet Standard features](https://docs.metamask.io/metamask-connect/solana/reference/methods/), [Trust Wallet Solana provider](https://github.com/trustwallet/trust-web3-provider/tree/main/packages/solana), and [Solflare SDK](https://docs.solflare.com/solflare/technical/integrate-solflare/solflare-wallet-sdk).
 
@@ -33,7 +33,7 @@ Rewards are **Staked JUP**, added to your staking account. The reviewed transact
 ## Use with your wallet
 
 1. On a phone, open the published site's HTTPS URL in a **supported wallet's DApp browser**. On desktop, open it in a browser with a supported wallet extension enabled. Menu names can differ by app version. An ordinary browser without an injected supported wallet cannot connect.
-2. Select **English / 简体中文**, choose the desired wallet if multiple wallets are detected, then select **Connect wallet**. Authorize the Solana account that earned the reward; the page reads that account's allocation.
+2. Select **English / 简体中文**, select **Connect wallet**, then choose your wallet card in the dialog. Authorize the Solana account that earned the reward; the page reads that account's allocation.
 3. Select **Prepare transaction**. Review the reward, staking effect, fee payer, programs, and estimated SOL cost.
 4. Select the **Sign and submit** button, then review and authorize the transaction in the selected wallet. This explicit wallet approval is the final signing step.
 5. Check **Refresh claim status** and the on-chain transaction result. If submission times out, check the reward status and wallet history before trying again; the page does not automatically resubmit.
@@ -66,7 +66,7 @@ npm test
 npm run build
 ```
 
-The build emits `dist/index.html`, content-hashed scripts and styles in `dist/assets/`, and `dist/asset-manifest.json`. Compatibility copies of `app.js` and `style.css` are also included. Content hashes keep cached HTML paired with the correct script and style versions. `npm run build:pages` additionally refreshes these files at the deployment repository root while retaining older hashed assets for cached visitors. Asset references are relative, supporting both homepage and project paths. To preview the layout locally:
+The build emits `dist/index.html`, content-hashed scripts and styles in `dist/assets/`, local wallet icons in `dist/icons/`, and `dist/asset-manifest.json`. Compatibility copies of `app.js` and `style.css` are also included. Content hashes keep cached HTML paired with the correct script and style versions. `npm run build:pages` additionally refreshes these files at the deployment repository root while retaining older hashed assets for cached visitors. Asset references are relative, supporting both homepage and project paths. To preview the layout locally:
 
 ```sh
 python3 -m http.server 8080 --directory dist

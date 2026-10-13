@@ -10,17 +10,15 @@ The GitHub Pages website is [jup-asr-helper.github.io](https://jup-asr-helper.gi
 
 Only the **ASR 2026 Q3** campaign (`asr-2026-q3`) is supported. Its published claim window ends **January 12, 2027 at 14:00 UTC** (22:00 Beijing time). The page reads the live campaign window and stops preparation outside it. See the [official campaign](https://jup.ag/rewards/asr-2026-q3).
 
-**A user confirmed a successful claim through mobile Binance Wallet on October 13, 2026.** This verifies the phone signing and API submission flow for that test. Unsigned claim construction and a Solana RPC simulation also succeeded during development.
-
-| Wallet | Connection | Validation status |
-| --- | --- | --- |
-| Binance Wallet | Solana Wallet Standard | A successful mobile claim was user-confirmed on October 13, 2026 |
-| Phantom | Wallet Standard or official `window.phantom.solana` provider | Adapter tested; live claim not yet confirmed |
-| OKX Wallet | Official `window.okxwallet.solana` provider preferred; Wallet Standard fallback | Adapter tested; live claim not yet confirmed |
-| Backpack | Wallet Standard or `window.backpack` provider | Adapter tested; live claim not yet confirmed |
-| MetaMask | Native Solana Wallet Standard registration | Mainnet discovery tested; live claim not yet confirmed |
-| Solflare | Wallet Standard or `window.solflare` provider | Adapter tested; live claim not yet confirmed |
-| Trust Wallet | Official `Trust` Wallet Standard registration; injected Solana provider fallback | Adapter tested; live claim not yet confirmed |
+| Wallet | Connection |
+| --- | --- |
+| Binance Wallet | Solana Wallet Standard |
+| Phantom | Wallet Standard or official `window.phantom.solana` provider |
+| OKX Wallet | Official `window.okxwallet.solana` provider preferred; Wallet Standard fallback |
+| Backpack | Wallet Standard or `window.backpack` provider |
+| MetaMask | Native Solana Wallet Standard registration |
+| Solflare | Wallet Standard or `window.solflare` provider |
+| Trust Wallet | Official `Trust` Wallet Standard registration; injected Solana provider fallback |
 
 Wallet discovery requires a recognized name, Solana mainnet, `standard:connect`, and sign-only `solana:signTransaction`. Both the `solana:mainnet` alias and the mainnet CAIP-2 identifier are supported. An EVM-only MetaMask provider is insufficient. The Connect dialog always lists all supported wallets, including Binance Wallet. Detected Solana interfaces connect from their cards; unavailable wallets show instructions to open the page inside the wallet or enable its extension. With multiple detected instances of the same wallet, choose the desired card. OKX uses its direct provider when available so the page reads the actively selected Solana account and its account-change events. Legacy bytes are passed to injected providers as a native `Transaction`; v0 bytes use `VersionedTransaction`. Injected adapters accept the wallets' official Solana transaction methods, and all signed output passes the same local message and signature checks before Jupiter's `postClaim` submission.
 
@@ -28,7 +26,7 @@ The [wallet compatibility review](docs/wallet-compatibility.md) records the adap
 
 Integration references: [Binance Solana interface](https://developers.binance.com/en/docs/products/web3-connect/solana-provider), [Phantom provider](https://docs.phantom.com/solana/sending-a-transaction), [OKX Solana provider](https://web3.okx.com/onchainos/dev-docs/wallet/dapp-connect/chains/solana/provider), [Backpack](https://docs.backpack.app/), [MetaMask Wallet Standard features](https://docs.metamask.io/metamask-connect/solana/reference/methods/), [Trust Wallet Solana provider](https://github.com/trustwallet/trust-web3-provider/tree/main/packages/solana), and [Solflare SDK](https://docs.solflare.com/solflare/technical/integrate-solflare/solflare-wallet-sdk).
 
-The campaign metadata currently sets `onlyClaimableThroughJup: true`. The page displays this official flag alongside the reported Binance Wallet success. It uses the wallet's real account and signature, without impersonating Jupiter Wallet or altering eligibility. API availability, wallet versions, and individual eligibility can still affect later claims.
+The helper uses Jupiter's campaign API to prepare and submit claims after wallet authorization and local verification. API availability, wallet versions, and individual eligibility can affect claims.
 
 Rewards are **Staked JUP**, added to your staking account. The reviewed transaction may create a staking account and enable continuous staking (`max lock`). To withdraw later, disable continuous staking and wait the required **7 days**. Check the actual transaction and current [Jupiter staking page](https://vote.jup.ag/) before signing.
 

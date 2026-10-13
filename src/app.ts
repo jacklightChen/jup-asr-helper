@@ -234,7 +234,7 @@ function renderMetadata(campaign: Campaign) {
   const format = (timestamp: string) => new Date(timestamp).toLocaleString(getLocale(), { timeZone: 'Asia/Shanghai',
     year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
   setText('campaign-date', () => t('claimWindow', { start: format(campaign.claimStartsAt), end: format(campaign.claimEndsAt) }));
-  setText('compatibility', campaign.reward.onlyClaimableThroughJup === true ? 'compatibilityJupiterOnly' : 'compatibilityApi');
+  $('compatibility').hidden = true;
 }
 
 function validateStats(stats: unknown): RewardStats {
@@ -574,6 +574,7 @@ api().then(response => {
   state.metadata = validateMetadata(response); renderMetadata(state.metadata); updateButtons();
 }).catch(error => {
   setText('campaign-date', 'campaignUnavailable');
+  $('compatibility').hidden = false;
   setText('compatibility', 'requirementsUnverified');
   showStatus('statusLoadFailed', () => localizedErrorMessage(error), 'error');
 });

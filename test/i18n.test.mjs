@@ -42,7 +42,6 @@ test('both languages render all static UI messages and preserve dynamic placehol
   assert.equal(translate('freshnessRemaining', { seconds: 12 }, 'en'), 'Start signing within 12 seconds. The blockhash expires.');
   assert.match(translate('stakingEffect', {}, 'en'), /disable continuous staking.*7-day cooldown/);
   assert.match(translate('claimWindow', { start: 'START', end: 'END' }, 'en'), /START — END.*Asia\/Shanghai, UTC\+8/);
-  assert.match(translate('compatibilityJupiterOnly', {}, 'en'), /successfully tested.*2026-10-13/);
 });
 
 test('every transaction verifier error has an English message and preserves Chinese detail', () => {

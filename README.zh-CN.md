@@ -10,17 +10,15 @@ GitHub Pages 网站地址：[jup-asr-helper.github.io](https://jup-asr-helper.gi
 
 目前仅支持 **ASR 2026 Q3**（`asr-2026-q3`）。官方公布的领取截止时间是 **2027 年 1 月 12 日 14:00 UTC**，即北京时间 **22:00**。页面会读取实时活动时间，并在领取窗口外停止准备交易。参见[官方活动](https://jup.ag/rewards/asr-2026-q3)。
 
-**用户已于 2026 年 10 月 13 日确认：通过手机 Binance Wallet 成功领取。** 这次测试验证了手机签名与 API 提交流程。开发期间也已成功构造未签名交易并通过 Solana RPC 模拟。
-
-| 钱包 | 连接方式 | 验证情况 |
-| --- | --- | --- |
-| Binance Wallet | Solana Wallet Standard | 用户已于 2026 年 10 月 13 日确认手机领取成功 |
-| Phantom | Wallet Standard 或官方 `window.phantom.solana` provider | 已测试适配器；真实领取尚未确认 |
-| OKX Wallet | 优先使用官方 `window.okxwallet.solana` provider；回退到 Wallet Standard | 已测试适配器；真实领取尚未确认 |
-| Backpack | Wallet Standard 或 `window.backpack` provider | 已测试适配器；真实领取尚未确认 |
-| MetaMask | 原生 Solana Wallet Standard 注册 | 已测试主网发现；真实领取尚未确认 |
-| Solflare | Wallet Standard 或 `window.solflare` provider | 已测试适配器；真实领取尚未确认 |
-| Trust Wallet | 官方 `Trust` Wallet Standard 注册；注入的 Solana provider 回退 | 已测试适配器；真实领取尚未确认 |
+| 钱包 | 连接方式 |
+| --- | --- |
+| Binance Wallet | Solana Wallet Standard |
+| Phantom | Wallet Standard 或官方 `window.phantom.solana` provider |
+| OKX Wallet | 优先使用官方 `window.okxwallet.solana` provider；回退到 Wallet Standard |
+| Backpack | Wallet Standard 或 `window.backpack` provider |
+| MetaMask | 原生 Solana Wallet Standard 注册 |
+| Solflare | Wallet Standard 或 `window.solflare` provider |
+| Trust Wallet | 官方 `Trust` Wallet Standard 注册；注入的 Solana provider 回退 |
 
 钱包发现要求名称匹配、支持 Solana 主网，并提供 `standard:connect` 和只签名的 `solana:signTransaction`。同时支持 `solana:mainnet` 别名和主网 CAIP-2 标识。只有 EVM 接口的 MetaMask 无法连接。连接弹窗始终显示全部支持钱包，包括 Binance Wallet。已检测到 Solana 接口的钱包可以直接点击卡片连接；未检测到时，显示在钱包内打开页面或启用扩展的说明。同一钱包有多个实例时，可选择对应卡片。OKX 官方 provider 可用时优先使用，以读取当前选中的 Solana 账户及账户切换事件。旧格式交易以原生 `Transaction` 传给注入接口，v0 格式使用 `VersionedTransaction`。注入适配器调用各钱包的官方 Solana 交易接口，所有返回的签名都经过相同的本地消息与签名核验，再由 Jupiter `postClaim` 提交。
 
@@ -28,7 +26,7 @@ GitHub Pages 网站地址：[jup-asr-helper.github.io](https://jup-asr-helper.gi
 
 集成参考：[Binance Solana 接口](https://developers.binance.com/en/docs/products/web3-connect/solana-provider)、[Phantom provider](https://docs.phantom.com/solana/sending-a-transaction)、[OKX Solana provider](https://web3.okx.com/onchainos/dev-docs/wallet/dapp-connect/chains/solana/provider)、[Backpack](https://docs.backpack.app/)、[MetaMask Wallet Standard 功能](https://docs.metamask.io/metamask-connect/solana/reference/methods/)、[Trust Wallet Solana provider](https://github.com/trustwallet/trust-web3-provider/tree/main/packages/solana)、[Solflare SDK](https://docs.solflare.com/solflare/technical/integrate-solflare/solflare-wallet-sdk)。
 
-当前活动元数据设置了 `onlyClaimableThroughJup: true`。页面会同时展示官方标记和已反馈的 Binance Wallet 领取成功情况。工具使用钱包的真实账户与签名，不伪装成 Jupiter Wallet，也不修改领取资格。之后的领取仍可能受接口可用性、钱包版本及个人资格影响。
+工具通过 Jupiter 活动 API 准备领取交易，在钱包授权和本地核验后提交。领取结果可能受接口可用性、钱包版本及个人资格影响。
 
 奖励是 **Staked JUP**，领取后进入 JUP 质押账户。已核对的交易可能创建质押账户并开启持续质押（`max lock`）。之后若要提取，需要关闭持续质押并等待规定的 **7 天**。签名前请核对实际交易及当时的 [Jupiter 质押页面](https://vote.jup.ag/)。
 

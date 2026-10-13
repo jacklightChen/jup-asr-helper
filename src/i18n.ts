@@ -1,6 +1,14 @@
+import { isRecord } from './types.ts';
 export const STORAGE_KEY = 'jup-asr-helper-language';
 export const translations = Object.freeze({
   zh: Object.freeze({
+    historyTitle: '捐赠记录', historyRefresh: '刷新', historyViewAll: '查看全部 ↗',
+    historyNote: '查询该地址最近 20 笔交易，展示最多 10 条已确认的 SOL 转入。包含手动转账，不代表完整捐赠历史。',
+    historyLoading: '正在查询链上记录…', historyEmpty: '最近交易中暂无已确认的 SOL 转入记录。',
+    historyError: '链上记录暂时无法加载，请稍后刷新或在浏览器查看。',
+    historyPartial: '部分交易暂时无法读取，当前记录可能不完整。请稍后刷新。',
+    historyUpdated: '更新于 {time}（UTC+8）', historyTransaction: '交易 ↗', historyTimeUnknown: '时间未知',
+
     walletPickerTitle: '连接钱包', walletPickerIntro: '选择你的 Solana 钱包', closeWalletPicker: '关闭钱包选择',
     walletAvailable: '已检测到 · 点击连接', walletNotDetected: '打开钱包或安装扩展', claimTested: '领取已实测',
     walletOpenHelp: '当前浏览器未检测到 {wallet} 的 Solana 接口。手机端请复制本站网址，在该钱包的 DApp 浏览器内打开；电脑端请安装或启用对应的 Solana 扩展。',
@@ -86,6 +94,13 @@ export const translations = Object.freeze({
     errorUnknownValidation: '交易核验失败，已停止。{detail}',
   }),
   en: Object.freeze({
+    historyTitle: 'Donation history', historyRefresh: 'Refresh', historyViewAll: 'View all ↗',
+    historyNote: 'Checks this address’s latest 20 transactions and shows up to 10 confirmed SOL transfers. Includes manual transfers; this is not a complete donation history.',
+    historyLoading: 'Loading on-chain records…', historyEmpty: 'No confirmed incoming SOL transfers in the recent transactions.',
+    historyError: 'On-chain records are temporarily unavailable. Refresh later or view them in the explorer.',
+    historyPartial: 'Some transactions could not be read. These records may be incomplete; refresh later.',
+    historyUpdated: 'Updated {time} (UTC+8)', historyTransaction: 'Transaction ↗', historyTimeUnknown: 'Time unavailable',
+
     walletPickerTitle: 'Connect', walletPickerIntro: 'Choose your Solana wallet', closeWalletPicker: 'Close wallet picker',
     walletAvailable: 'Detected · Connect', walletNotDetected: 'Open wallet or install extension', claimTested: 'Claim tested',
     walletOpenHelp: 'No {wallet} Solana interface was detected. On mobile, copy this page URL and open it in the wallet’s DApp browser. On desktop, install or enable its Solana extension.',
@@ -172,30 +187,35 @@ export const translations = Object.freeze({
   }),
 });
 
-export function chooseLanguage({ search = '', saved, browserLanguage = 'en' } = {}) {
+export type Language = 'zh' | 'en';
+export type MessageKey = keyof typeof translations.zh;
+export type MessageValues = Record<string, string | number | bigint | boolean>;
+export function chooseLanguage({ search = '', saved, browserLanguage = 'en' }: { search?: string; saved?: string | null; browserLanguage?: string } = {}): Language {
   const requested = new URLSearchParams(search).get('lang');
   if (requested === 'zh' || requested === 'en') return requested;
   if (saved === 'zh' || saved === 'en') return saved;
   return /^zh(?:-|$)/i.test(browserLanguage) ? 'zh' : 'en';
 }
-let language = 'en';
+let language: Language = 'en';
 export const getLanguage = () => language;
 export const getLocale = () => language === 'zh' ? 'zh-CN' : 'en-US';
-export function setLanguage(value) {
+export function setLanguage(value: string) {
   if (value !== 'zh' && value !== 'en') throw new Error('Unsupported language');
   language = value;
 }
-export function translate(key, values = {}, selectedLanguage = language) {
-  const message = translations[selectedLanguage]?.[key];
+export function translate(key: string, values: MessageValues = {}, selectedLanguage: Language = language) {
+  const message = Object.hasOwn(translations[selectedLanguage], key) ? translations[selectedLanguage][key as MessageKey] : undefined;
   if (message === undefined) throw new Error(`Missing translation: ${selectedLanguage}.${key}`);
-  return message.replace(/\{([a-zA-Z]+)\}/g, (_, name) => String(values[name] ?? `{${name}}`));
+  return message.replace(/\{([a-zA-Z]+)\}/g, (_: string, name: string) => String(values[name] ?? `{${name}}`));
 }
 export class LocalizedError extends Error {
-  constructor(key, values = {}) { super(translate(key, values)); this.key = key; this.values = values; }
+  readonly key: MessageKey;
+  readonly values: MessageValues;
+  constructor(key: MessageKey, values: MessageValues = {}) { super(translate(key, values)); this.key = key; this.values = values; }
 }
 
 // Map verifier errors without changing the security-sensitive transaction module.
-export const transactionErrorTranslations = Object.freeze({
+export const transactionErrorTranslations: Readonly<Record<string, string>> = Object.freeze({
   '当前领取交易包含未核实的地址查找表，已停止。': 'The claim transaction contains unverified address lookup tables. Stopped.',
   '当前领取交易的签名或手续费账户与钱包不一致，已停止。': 'The claim transaction’s signer or fee payer does not match your wallet. Stopped.',
   '交易包含未核实的程序，已停止。': 'The transaction contains an unverified program. Stopped.',
@@ -224,9 +244,9 @@ export const transactionErrorTranslations = Object.freeze({
   '钱包改变了交易中已有的其他签名，未提交。': 'The wallet changed an existing signature in the transaction. Nothing was submitted.',
   '钱包签名与当前地址或交易不匹配，未提交。': 'The wallet signature does not match this address or transaction. Nothing was submitted.',
 });
-export function localizedErrorMessage(error, selectedLanguage = language) {
+export function localizedErrorMessage(error: unknown, selectedLanguage: Language = language) {
   if (error instanceof LocalizedError) return translate(error.key, error.values, selectedLanguage);
-  const message = error?.message;
+  const message = error instanceof Error ? error.message : isRecord(error) && typeof error.message === 'string' ? error.message : null;
   if (!message) return translate('errorWalletCancelled', {}, selectedLanguage);
   if (selectedLanguage === 'en' && transactionErrorTranslations[message]) return transactionErrorTranslations[message];
   return String(message);

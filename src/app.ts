@@ -1,43 +1,62 @@
-import { DONATION_ADDRESS, prepareDonation, verifyDonationSigned, submitDonation, donationStatus } from './donation.mjs';
+import { isRecord, isWalletAccount } from './types.ts';
+import type { SolanaWallet, WalletAccount, InjectedProvider, Campaign, RewardStats } from './types.ts';
+import type { Language, MessageKey, MessageValues } from './i18n.ts';
+import type { DonationAmount, DonationReceipt } from './donation.ts';
+import { loadDonationHistory, formatHistorySol } from './donation-history.ts';
+import type { DonationHistory } from './donation-history.ts';
+import { DONATION_ADDRESS, prepareDonation, verifyDonationSigned, submitDonation, donationStatus } from './donation.ts';
 import { getWallets } from '@wallet-standard/app';
 import { PublicKey } from '@solana/web3.js';
-import { inspectPrepared, verifySignedTransaction, sameBytes, CURRENT_CAMPAIGN } from './transaction.mjs';
-import { STORAGE_KEY, chooseLanguage, getLanguage, getLocale, setLanguage, translate as t, LocalizedError, localizedErrorMessage } from './i18n.mjs';
-import { supportedWallets, walletBrand, selectWallet, mainnetChain, WALLET_CATALOG } from './wallets.mjs';
-import { createPhantomWallet, createInjectedWallet } from './phantom.mjs';
+import { inspectPrepared, verifySignedTransaction, sameBytes, CURRENT_CAMPAIGN } from './transaction.ts';
+import { STORAGE_KEY, chooseLanguage, getLanguage, getLocale, setLanguage, translate as t, LocalizedError, localizedErrorMessage } from './i18n.ts';
+import { supportedWallets, walletBrand, selectWallet, mainnetChain, WALLET_CATALOG } from './wallets.ts';
+import { createPhantomWallet, createInjectedWallet } from './phantom.ts';
 
 const API = 'https://datapi.jup.ag/rewards/v1/campaigns/asr-2026-q3';
 const MAX_PREPARE_AGE_MS = 45000;
-const $ = id => document.getElementById(id);
+type ButtonId = 'connect' | 'prepare' | 'sign' | 'refresh-status' | 'donate-small' | 'donate-large' | 'refresh-donation' | 'refresh-history' | 'copy-donation' | 'wallet-picker-close' | 'wallet-copy-url';
+type AnchorId = 'phantom-open' | 'wallet-official' | 'transaction-link' | 'donation-transaction';
+type ElementFor<Id extends string> = Id extends ButtonId ? HTMLButtonElement : Id extends AnchorId ? HTMLAnchorElement : Id extends 'wallet-picker' ? HTMLDialogElement : Id extends 'account-choice' ? HTMLSelectElement : HTMLElement;
+function $<Id extends string>(id: Id): ElementFor<Id> {
+  const element = document.getElementById(id);
+  if (!element) throw new Error(`Missing page element: ${id}`);
+  return element as ElementFor<Id>;
+}
 const registry = getWallets();
-const state = { selectedWallet: null, availableWallets: [], wallet: null, account: null, accounts: [], metadata: null, stats: null,
+interface AppState {
+  selectedWallet: SolanaWallet | null; availableWallets: SolanaWallet[]; wallet: SolanaWallet | null;
+  account: WalletAccount | null; accounts: readonly WalletAccount[]; metadata: Campaign | null; stats: RewardStats | null;
+  prepared: ReturnType<typeof inspectPrepared> | null; preparedAt: number; busy: boolean; submitted: boolean;
+  generation: number; unsubscribe: (() => void) | null; donation: DonationReceipt | null;
+}
+const state: AppState = { selectedWallet: null, availableWallets: [], wallet: null, account: null, accounts: [], metadata: null, stats: null,
   prepared: null, preparedAt: 0, busy: false, submitted: false, generation: 0, unsubscribe: null, donation: null };
-const formatAmount = amount => new Intl.NumberFormat(getLocale(), { maximumFractionDigits: 6 }).format(amount);
-const formatSol = lamports => (Number(lamports) / 1e9).toFixed(9).replace(/0+$/, '').replace(/\.$/, '');
+const formatAmount = (amount: number) => new Intl.NumberFormat(getLocale(), { maximumFractionDigits: 6 }).format(amount);
+const formatSol = (lamports: bigint | number) => (Number(lamports) / 1e9).toFixed(9).replace(/0+$/, '').replace(/\.$/, '');
 
 // Store message descriptors so changing languages also updates active status/error text.
-const translatedNodes = new Map();
-function setText(id, keyOrRender, values = {}) {
+const translatedNodes = new Map<string, () => string>();
+function setText(id: string, keyOrRender: MessageKey | (() => string), values: MessageValues = {}) {
   const render = typeof keyOrRender === 'function' ? keyOrRender : () => t(keyOrRender, values);
   translatedNodes.set(id, render);
   $(id).textContent = render();
 }
-function showStatus(label, message, style = '', values = {}) {
+function showStatus(label: MessageKey, message: MessageKey | (() => string), style = '', values: MessageValues = {}) {
   $('status-box').hidden = false;
   $('status-box').className = `status panel ${style}`;
   setText('status-label', label);
   setText('status-text', message, values);
 }
-function applyLanguage(language, persist = false) {
+function applyLanguage(language: Language, persist = false) {
   setLanguage(language);
   document.documentElement.lang = language === 'zh' ? 'zh-CN' : 'en';
-  document.querySelectorAll('[data-i18n]').forEach(node => { node.textContent = t(node.dataset.i18n); });
-  document.querySelectorAll('[data-i18n-aria]').forEach(node => { node.setAttribute('aria-label', t(node.dataset.i18nAria)); });
-  document.querySelectorAll('[data-language]').forEach(button => { button.setAttribute('aria-pressed', String(button.dataset.language === language)); });
+  document.querySelectorAll<HTMLElement>('[data-i18n]').forEach(node => { node.textContent = t(node.dataset.i18n ?? ''); });
+  document.querySelectorAll<HTMLElement>('[data-i18n-aria]').forEach(node => { node.setAttribute('aria-label', t(node.dataset.i18nAria ?? '')); });
+  document.querySelectorAll<HTMLElement>('[data-language]').forEach(button => { button.setAttribute('aria-pressed', String(button.dataset.language === language)); });
   for (const [id, render] of translatedNodes) $(id).textContent = render();
   if (state.metadata) renderMetadata(state.metadata);
   if (state.stats) renderStats(state.stats);
-  updateDiscovery(); updateFreshness();
+  updateDiscovery(); updateFreshness(); renderDonationHistory();
   $('phantom-open').hidden = location.protocol !== 'https:';
   if (location.protocol === 'https:') {
     // Only share this page path and language; never carry account-related query data.
@@ -81,9 +100,10 @@ function updateButtons() {
   setText('prepare', state.prepared ? 'reprepareButton' : 'prepareButton');
 }
 
-let phantomProvider = null, phantomWallet = null;
-const injectedCache = new Map();
-function injectedWallet(name, provider) {
+let phantomProvider: InjectedProvider | null | undefined = null;
+let phantomWallet: SolanaWallet | null = null;
+const injectedCache = new Map<string, { provider: InjectedProvider; wallet: SolanaWallet | null }>();
+function injectedWallet(name: string, provider: InjectedProvider | null | undefined) {
   if (!provider) return null;
   const cached = injectedCache.get(name);
   if (cached?.provider === provider) return cached.wallet;
@@ -96,7 +116,7 @@ function detectedWallets() {
   const provider = window.phantom?.solana;
   if (provider !== phantomProvider) { phantomProvider = provider; phantomWallet = createPhantomWallet(provider); }
   if (phantomWallet && !wallets.some(wallet => walletBrand(wallet) === 'phantom')) wallets.push(phantomWallet);
-  const injected = [
+  const injected: [string, InjectedProvider | null | undefined][] = [
     ['OKX Wallet', window.okxwallet?.solana],
     ['Backpack', window.backpack?.isBackpack === true ? window.backpack : null],
     ['Solflare', window.solflare?.isSolflare === true ? window.solflare : null],
@@ -109,7 +129,7 @@ function detectedWallets() {
   }
   return wallets;
 }
-function clearAccount(allocationKey = 'allocationInitial') {
+function clearAccount(allocationKey: MessageKey = 'allocationInitial') {
   state.generation++;
   state.unsubscribe?.(); state.unsubscribe = null;
   state.wallet = null; state.account = null; state.accounts = []; state.stats = null;
@@ -179,7 +199,7 @@ function openWalletPicker() {
   $('wallet-picker').showModal();
 }
 
-async function api(path = '', body) {
+async function api(path = '', body?: unknown): Promise<unknown> {
   const post = body !== undefined;
   let response;
   try {
@@ -190,53 +210,57 @@ async function api(path = '', body) {
     throw new LocalizedError(post ? 'errorSubmitUnknown' : 'errorApiRead');
   }
   const raw = await response.text();
-  let value;
+  let value: unknown;
   try { value = JSON.parse(raw); } catch { value = null; }
   if (!response.ok) {
-    const detail = value?.message ?? value?.error ?? raw;
-    throw new LocalizedError('errorHttp', { status: response.status, detail: typeof detail === 'string' ? detail.slice(0, 500) : JSON.stringify(detail).slice(0, 500) });
+    const detail = isRecord(value) ? value.message ?? value.error ?? raw : raw;
+    throw new LocalizedError('errorHttp', { status: response.status, detail: typeof detail === 'string' ? detail.slice(0, 500) : String(JSON.stringify(detail)).slice(0, 500) });
   }
   if (value === null) throw new LocalizedError('errorApiFormat');
   return value;
 }
 
-function validateMetadata(response) {
-  const campaign = response.campaign;
-  if (!campaign || campaign.slug !== 'asr-2026-q3' || campaign.reward?.assetId !== CURRENT_CAMPAIGN.mint ||
-    campaign.reward?.rewardName !== 'Staked JUP' || !Number.isFinite(Date.parse(campaign.claimStartsAt)) ||
-    !Number.isFinite(Date.parse(campaign.claimEndsAt))) throw new LocalizedError('errorMetadata');
-  return campaign;
+function validateMetadata(response: unknown): Campaign {
+  const campaign = isRecord(response) ? response.campaign : null;
+  const reward = isRecord(campaign) ? campaign.reward : null;
+  if (!isRecord(campaign) || !isRecord(reward) || campaign.slug !== 'asr-2026-q3' || reward.assetId !== CURRENT_CAMPAIGN.mint ||
+    reward.rewardName !== 'Staked JUP' || typeof campaign.claimStartsAt !== 'string' || typeof campaign.claimEndsAt !== 'string' ||
+    !Number.isFinite(Date.parse(campaign.claimStartsAt)) || !Number.isFinite(Date.parse(campaign.claimEndsAt))) throw new LocalizedError('errorMetadata');
+  return { claimStartsAt: campaign.claimStartsAt, claimEndsAt: campaign.claimEndsAt, reward: { onlyClaimableThroughJup: reward.onlyClaimableThroughJup } };
 }
 
-function renderMetadata(campaign) {
-  const format = timestamp => new Date(timestamp).toLocaleString(getLocale(), { timeZone: 'Asia/Shanghai',
+function renderMetadata(campaign: Campaign) {
+  const format = (timestamp: string) => new Date(timestamp).toLocaleString(getLocale(), { timeZone: 'Asia/Shanghai',
     year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
   setText('campaign-date', () => t('claimWindow', { start: format(campaign.claimStartsAt), end: format(campaign.claimEndsAt) }));
   setText('compatibility', campaign.reward.onlyClaimableThroughJup === true ? 'compatibilityJupiterOnly' : 'compatibilityApi');
 }
 
-function validateStats(stats) {
-  if (stats.assetId !== CURRENT_CAMPAIGN.mint || stats.rewardType !== 'retroactive' ||
+function validateStats(stats: unknown): RewardStats {
+  if (!isRecord(stats) || stats.assetId !== CURRENT_CAMPAIGN.mint || stats.rewardType !== 'retroactive' ||
     typeof stats.unclaimedAmount !== 'number' || !Number.isFinite(stats.unclaimedAmount) || stats.unclaimedAmount < 0 ||
     typeof stats.claimedAmount !== 'number' || !Number.isFinite(stats.claimedAmount) || stats.claimedAmount < 0) {
     throw new LocalizedError('errorStats');
   }
-  return stats;
+  return { unclaimedAmount: stats.unclaimedAmount, claimedAmount: stats.claimedAmount };
 }
 
-function renderStats(stats) {
+function renderStats(stats: RewardStats) {
   $('amount').textContent = formatAmount(stats.unclaimedAmount);
   setText('allocation-status', () => t(stats.unclaimedAmount > 0 ? 'allocationAvailable' :
     stats.claimedAmount > 0 ? 'allocationClaimed' : 'allocationNone', { amount: formatAmount(stats.claimedAmount) }));
   updateButtons();
 }
 
-function eligibleAccounts(accounts) {
-  return accounts.filter(account => mainnetChain(account) && account.features.includes('solana:signTransaction') &&
-    sameBytes(new PublicKey(account.address).toBytes(), account.publicKey));
+function eligibleAccounts(accounts: readonly unknown[]): WalletAccount[] {
+  return accounts.filter((account): account is WalletAccount => {
+    if (!isWalletAccount(account) || !mainnetChain(account) || !account.features.includes('solana:signTransaction')) return false;
+    try { return sameBytes(new PublicKey(account.address).toBytes(), account.publicKey); } catch { return false; }
+  });
 }
 
-async function useAccount(account) {
+async function useAccount(account: WalletAccount) {
+  if (!state.wallet) throw new LocalizedError('errorConnectFirst');
   const generation = ++state.generation;
   state.account = account; state.stats = null;
   invalidatePrepared();
@@ -287,12 +311,12 @@ async function connect() {
   if (state.wallet === wallet && state.account) showStatus('statusConnected', 'connectedMessage', 'success', { wallet: wallet.name });
 }
 
-function renderCodes(id, values) {
+function renderCodes(id: string, values: readonly string[]) {
   $(id).replaceChildren(...values.map(value => { const element = document.createElement('code'); element.textContent = value; return element; }));
 }
 
 async function prepare() {
-  if (!state.account) throw new LocalizedError('errorConnectFirst');
+  if (!state.account || !state.wallet) throw new LocalizedError('errorConnectFirst');
   const generation = state.generation, address = state.account.address;
   invalidatePrepared();
   showStatus('statusPreparing', 'preparingMessage');
@@ -304,12 +328,12 @@ async function prepare() {
   if (state.stats.unclaimedAmount <= 0) throw new LocalizedError('errorNoReward');
   const claim = await api(`/claim?address=${encodeURIComponent(address)}`);
   if (generation !== state.generation) throw new LocalizedError('errorAccountChangedPrepare');
-  const prepared = inspectPrepared(claim.transaction, address);
+  const prepared = inspectPrepared(isRecord(claim) ? claim.transaction : null, address);
   const feature = state.wallet.features['solana:signTransaction'];
   if (!feature.supportedTransactionVersions?.includes(prepared.version)) throw new LocalizedError('errorTransactionVersion');
   const expectedRaw = BigInt(Math.round(state.stats.unclaimedAmount * 1e6));
   if (prepared.operations.claimedRaw !== expectedRaw) throw new LocalizedError('errorAmountMismatch');
-  const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', prepared.message));
+  const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', Uint8Array.from(prepared.message)));
   if (generation !== state.generation) throw new LocalizedError('errorAccountChangedPrepare');
   const { operations } = prepared;
   $('fee-payer').textContent = prepared.feePayer;
@@ -370,7 +394,7 @@ async function signAndSubmit() {
     $('result').hidden = false;
     setText('result-title', 'resultApiReturned');
     $('result-json').textContent = JSON.stringify(result, null, 2);
-    const transactionId = result.transactionId ?? result.txid ?? result.signature;
+    const transactionId = isRecord(result) ? result.transactionId ?? result.txid ?? result.signature : null;
     if (typeof transactionId === 'string' && /^[1-9A-HJ-NP-Za-km-z]{80,100}$/.test(transactionId)) {
       $('transaction-id').hidden = false; $('transaction-id').textContent = transactionId;
       $('transaction-link').href = `https://solscan.io/tx/${encodeURIComponent(transactionId)}`;
@@ -392,7 +416,7 @@ async function signAndSubmit() {
   } finally { invalidatePrepared(); }
 }
 
-async function run(action) {
+async function run(action: () => Promise<unknown>) {
   if (state.busy) return;
   state.busy = true; updateButtons();
   try { await action(); } catch (error) {
@@ -405,6 +429,7 @@ async function refreshDonation() {
   const receipt = state.donation;
   try {
     receipt.status = await donationStatus(receipt.signature);
+    if (receipt.status === 'confirmed') void refreshDonationHistory();
     setText('donation-status', receipt.status === 'confirmed' ? 'donationConfirmed' :
       receipt.status === 'failed' ? 'donationFailed' : 'donationPending', { amount: receipt.amount });
   } catch {
@@ -413,7 +438,7 @@ async function refreshDonation() {
   updateButtons();
 }
 
-async function donate(amount) {
+async function donate(amount: DonationAmount) {
   const { account, wallet, generation } = state;
   if (!account || !wallet) throw new LocalizedError('errorConnectFirst');
   if (state.donation?.status === 'pending') throw new LocalizedError('errorDonationPending');
@@ -447,6 +472,51 @@ async function donate(amount) {
     setText('donation-status', () => localizedErrorMessage(error));
   }
 }
+
+const historyState: { data: DonationHistory | null; loading: boolean; error: boolean; updatedAt: Date | null } = {
+  data: null, loading: false, error: false, updatedAt: null,
+};
+function historyTime(date: Date) {
+  return date.toLocaleString(getLocale(), { timeZone: 'Asia/Shanghai', month: '2-digit', day: '2-digit',
+    year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
+}
+function renderDonationHistory() {
+  $('refresh-history').disabled = historyState.loading;
+  $('donation-history').setAttribute('aria-busy', String(historyState.loading));
+  const records = historyState.data?.records ?? [];
+  const status = historyState.loading ? 'historyLoading' : historyState.error ? 'historyError' :
+    historyState.data?.partial ? 'historyPartial' : records.length === 0 ? 'historyEmpty' : null;
+  $('history-status').textContent = status ? t(status) : '';
+  $('history-status').hidden = status === null;
+  $('history-records').replaceChildren(...records.map(record => {
+    const row = document.createElement('li');
+    const amount = document.createElement('strong'); amount.textContent = `${formatHistorySol(record.lamports)} SOL`;
+    const sender = document.createElement('a'); sender.className = 'history-sender';
+    sender.href = `https://solscan.io/account/${encodeURIComponent(record.sender)}`;
+    sender.target = '_blank'; sender.rel = 'noopener noreferrer'; sender.title = record.sender;
+    sender.textContent = `${record.sender.slice(0, 5)}…${record.sender.slice(-5)}`;
+    const time = document.createElement('time');
+    if (record.blockTime !== null) {
+      const date = new Date(record.blockTime * 1000); time.dateTime = date.toISOString();
+      time.textContent = historyTime(date); time.title = 'UTC+8';
+    } else time.textContent = t('historyTimeUnknown');
+    const link = document.createElement('a'); link.className = 'history-transaction';
+    link.href = `https://solscan.io/tx/${encodeURIComponent(record.signature)}`;
+    link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = t('historyTransaction');
+    row.append(amount, sender, time, link); return row;
+  }));
+  $('history-updated').hidden = historyState.updatedAt === null;
+  if (historyState.updatedAt) $('history-updated').textContent = t('historyUpdated', { time: historyTime(historyState.updatedAt) });
+}
+async function refreshDonationHistory() {
+  if (historyState.loading) return;
+  historyState.loading = true; historyState.error = false; renderDonationHistory();
+  try {
+    historyState.data = await loadDonationHistory(); historyState.updatedAt = new Date();
+  } catch { historyState.error = true; }
+  finally { historyState.loading = false; renderDonationHistory(); }
+}
+$('refresh-history').addEventListener('click', () => void refreshDonationHistory());
 
 $('donation-address').textContent = DONATION_ADDRESS;
 $('copy-donation').addEventListener('click', async () => {
@@ -486,8 +556,8 @@ window.addEventListener('load', updateDiscovery, { once: true });
 let savedLanguage;
 try { savedLanguage = localStorage.getItem(STORAGE_KEY); } catch { /* Private browsing may block storage. */ }
 applyLanguage(chooseLanguage({ search: location.search, saved: savedLanguage, browserLanguage: navigator.language }));
-document.querySelectorAll('[data-language]').forEach(button => {
-  button.addEventListener('click', () => applyLanguage(button.dataset.language, true));
+document.querySelectorAll<HTMLElement>('[data-language]').forEach(button => {
+  button.addEventListener('click', () => applyLanguage(button.dataset.language === 'zh' ? 'zh' : 'en', true));
 });
 setInterval(updateFreshness, 1000);
 api().then(response => {
@@ -497,3 +567,5 @@ api().then(response => {
   setText('compatibility', 'requirementsUnverified');
   showStatus('statusLoadFailed', () => localizedErrorMessage(error), 'error');
 });
+
+void refreshDonationHistory();

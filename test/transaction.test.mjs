@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Keypair, PublicKey, SystemProgram, ComputeBudgetProgram, TransactionInstruction, TransactionMessage, VersionedTransaction } from '@solana/web3.js';
 import nacl from 'tweetnacl';
-import { inspectPrepared, verifySignedTransaction, sameBytes, CURRENT_CAMPAIGN as C } from '../src/transaction.mjs';
+import { inspectPrepared, verifySignedTransaction, sameBytes, CURRENT_CAMPAIGN as C } from '../src/transaction.ts';
 
 function currentClaimFixture() {
   const user = Keypair.generate(), locker = new PublicKey(C.locker), distributor = new PublicKey(C.distributor);

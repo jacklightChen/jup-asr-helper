@@ -1,3 +1,4 @@
+import type { SignaturePreparation } from './types.ts';
 import { VersionedTransaction, PublicKey } from '@solana/web3.js';
 import { Buffer } from 'buffer';
 import nacl from 'tweetnacl';
@@ -14,11 +15,11 @@ export const CURRENT_CAMPAIGN = Object.freeze({
   associatedToken: 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'
 });
 
-function requireCondition(condition, message) {
+function requireCondition(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message + '，已停止。');
 }
 
-function inspectOperations(tx, address) {
+function inspectOperations(tx: VersionedTransaction, address: string) {
   const expected = CURRENT_CAMPAIGN;
   const keys = tx.message.staticAccountKeys;
   requireCondition(!(tx.message.addressTableLookups ?? []).length, '当前领取交易包含未核实的地址查找表');
@@ -29,19 +30,20 @@ function inspectOperations(tx, address) {
   const distributorProgram = new PublicKey(expected.distributorProgram);
   const escrow = PublicKey.findProgramAddressSync([Buffer.from('Escrow'), locker.toBuffer(), user.toBuffer()], voter)[0];
   const claimStatus = PublicKey.findProgramAddressSync([Buffer.from('ClaimStatus'), user.toBuffer(), distributor.toBuffer()], distributorProgram)[0];
-  const ata = owner => PublicKey.findProgramAddressSync([
+  const ata = (owner: PublicKey) => PublicKey.findProgramAddressSync([
     owner.toBuffer(), new PublicKey(expected.token).toBuffer(), new PublicKey(expected.mint).toBuffer()
   ], new PublicKey(expected.associatedToken))[0];
-  const seen = new Set();
-  let createsEscrow = false, enablesMaxLock = false, claimedRaw;
+  const seen = new Set<string>();
+  let createsEscrow = false, enablesMaxLock = false;
+  let claimedRaw: bigint | undefined;
   let computeUnitLimit = 200000, microLamports = 0n;
   for (const [position, ix] of tx.message.compiledInstructions.entries()) {
     const program = keys[ix.programIdIndex]?.toBase58();
-    requireCondition([expected.compute, expected.voter, expected.distributorProgram].includes(program), '交易包含未核实的程序');
+    requireCondition(new Set<string>([expected.compute, expected.voter, expected.distributorProgram]).has(program ?? ''), '交易包含未核实的程序');
     const data = Buffer.from(ix.data);
     const accounts = ix.accountKeyIndexes.map(index => keys[index]);
-    const matches = (index, value) => accounts[index]?.toBase58() === value.toString();
-    const distinct = name => {
+    const matches = (index: number, value: PublicKey | string) => accounts[index]?.toBase58() === value.toString();
+    const distinct = (name: string) => {
       requireCondition(!seen.has(name), '交易包含重复指令'); seen.add(name);
     };
     if (program === expected.compute) {
@@ -79,18 +81,18 @@ function inspectOperations(tx, address) {
         matches(7, voter) && matches(8, locker) && matches(9, escrow) && matches(10, ata(escrow)), '领取账户与当前钱包或活动不一致');
     } else throw new Error('交易包含未识别的领取操作，已停止。');
   }
-  requireCondition(seen.has('claim'), '交易没有领取并质押指令');
+  requireCondition(seen.has('claim') && typeof claimedRaw === 'bigint', '交易没有领取并质押指令');
   const networkFeeLamports = 5000n + (BigInt(computeUnitLimit) * microLamports + 999999n) / 1000000n;
   requireCondition(networkFeeLamports <= 10000000n, '预估网络费超过 0.01 SOL');
   return { createsEscrow, enablesMaxLock, claimedRaw, networkFeeLamports,
     rentLamports: 1463040n + (createsEscrow ? 2286000n : 0n), escrow: escrow.toBase58() };
 }
 
-export function sameBytes(a, b) {
+export function sameBytes(a: Uint8Array, b: Uint8Array) {
   return a?.length === b?.length && a.every((value, index) => value === b[index]);
 }
 
-export function decodeTransaction(base64) {
+export function decodeTransaction(base64: unknown) {
   if (typeof base64 !== 'string' || !/^[A-Za-z0-9+/]+={0,2}$/.test(base64)) {
     throw new Error('Jupiter 没有返回有效交易。');
   }
@@ -101,7 +103,7 @@ export function decodeTransaction(base64) {
   return { tx, bytes };
 }
 
-export function inspectPrepared(base64, address) {
+export function inspectPrepared(base64: unknown, address: string) {
   if (new PublicKey(address).toBase58() !== address) throw new Error('钱包地址无效。');
   const { tx, bytes } = decodeTransaction(base64);
   const keys = tx.message.staticAccountKeys;
@@ -124,7 +126,7 @@ export function inspectPrepared(base64, address) {
   };
 }
 
-export function verifySignedTransaction(prepared, signedBytes, address) {
+export function verifySignedTransaction(prepared: SignaturePreparation, signedBytes: unknown, address: string) {
   if (!(signedBytes instanceof Uint8Array)) throw new Error('钱包没有返回完整的已签名交易。');
   const signed = VersionedTransaction.deserialize(signedBytes);
   if (!sameBytes(signed.message.serialize(), prepared.message)) {

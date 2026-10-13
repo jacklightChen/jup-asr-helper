@@ -79,6 +79,13 @@
       <p id="donation-status" class="micro" aria-live="polite"></p>
       <a id="donation-transaction" target="_blank" rel="noopener noreferrer" data-i18n="viewDonation" hidden>查看捐赠交易 ↗</a>
       <button id="refresh-donation" type="button" class="button secondary" data-i18n="refreshDonation" hidden>查询捐赠状态</button>
+      <section id="donation-history" class="donation-history" aria-labelledby="history-title" aria-busy="false">
+        <div class="history-heading"><h3 id="history-title" data-i18n="historyTitle">捐赠记录</h3><div><button id="refresh-history" type="button" data-i18n="historyRefresh">刷新</button><a href="https://solscan.io/account/5QDviToVpnePujox1tm3cwSsAwp9WKChiaJnWWSbHS3H" target="_blank" rel="noopener noreferrer" data-i18n="historyViewAll">查看全部 ↗</a></div></div>
+        <p class="micro" data-i18n="historyNote">查询该地址最近 20 笔交易，展示最多 10 条已确认的 SOL 转入。包含手动转账，不代表完整捐赠历史。</p>
+        <p id="history-status" class="micro" aria-live="polite"></p>
+        <ol id="history-records" class="history-records"></ol>
+        <p id="history-updated" class="micro" hidden></p>
+      </section>
     </section>
     <footer aria-labelledby="disclaimer-title"><h2 id="disclaimer-title" data-i18n="disclaimerTitle">免责声明</h2><p data-i18n="footerCommunity">社区开源助手，使用 Wallet Standard 和 Phantom 官方接口与 Jupiter 活动 API；与所列钱包或 Jupiter 无隶属关系。</p><p data-i18n="footerPrivacy">本页不会请求私钥或助记词。奖励由官方交易执行。</p><p data-i18n="disclaimerText">本工具是独立社区项目，与所列钱包或 Jupiter 无隶属关系，按现状提供，不构成投资建议。接口、钱包版本与个人资格可能影响领取结果；签名前请自行核对网络、收款地址、金额和质押操作。链上确认的转账无法由本工具撤回。捐赠完全自愿，与 ASR 领取分开。</p><div><a href="https://developers.binance.com/en/docs/products/web3-connect/solana-provider" target="_blank" rel="noopener noreferrer" data-i18n="binanceDocs">Binance 接口文档 ↗</a><span>·</span><a href="https://docs.phantom.com/solana/sending-a-transaction" target="_blank" rel="noopener noreferrer" data-i18n="phantomDocs">Phantom 接口文档 ↗</a><span>·</span><a href="https://jup.ag/rewards/asr-2026-q3" target="_blank" rel="noopener noreferrer">Jupiter ↗</a></div></footer>
   </main>

@@ -1,12 +1,13 @@
+import type { InjectedProvider, WalletAccount, SolanaWallet } from './types.ts';
 import { PublicKey, VersionedTransaction } from '@solana/web3.js';
-import { SOLANA_MAINNET } from './wallets.mjs';
-import { LocalizedError } from './i18n.mjs';
+import { SOLANA_MAINNET } from './wallets.ts';
+import { LocalizedError } from './i18n.ts';
 
 // Phantom's injected provider supports sign-only transactions. Its current
 // Wallet Standard interface supports sign-and-send, which would skip postClaim.
 // Adapt the official provider so every signature still passes our verifier and
 // only Jupiter's postClaim endpoint submits the transaction.
-export function phantomAccount(provider) {
+export function phantomAccount(provider: InjectedProvider | null | undefined): WalletAccount | null {
   if (!provider?.publicKey) return null;
   try {
     const key = new PublicKey(provider.publicKey.toString());
@@ -14,17 +15,18 @@ export function phantomAccount(provider) {
       chains: [SOLANA_MAINNET], features: ['solana:signTransaction'] };
   } catch { return null; }
 }
-export function matchesPhantomAccount(provider, account, chain) {
+export function matchesPhantomAccount(provider: InjectedProvider, account: WalletAccount, chain: string | null) {
   const current = phantomAccount(provider);
   return chain === SOLANA_MAINNET && !!current && current.address === account?.address &&
     account.publicKey?.length === current.publicKey.length && current.publicKey.every((value, index) => value === account.publicKey[index]);
 }
-export function createPhantomWallet(provider) {
+export function createPhantomWallet(provider: InjectedProvider | null | undefined) {
   return provider?.isPhantom === true ? createInjectedWallet(provider, 'Phantom') : null;
 }
-export function createInjectedWallet(provider, name) {
+export function createInjectedWallet(provider: InjectedProvider | null | undefined, name: string): SolanaWallet | null {
   if (!['Phantom', 'OKX Wallet', 'Backpack', 'Solflare', 'Trust Wallet'].includes(name) ||
     typeof provider?.connect !== 'function' || typeof provider?.signTransaction !== 'function') return null;
+  const connect = provider.connect.bind(provider), sign = provider.signTransaction.bind(provider);
   let disconnected = false;
   const currentAccount = () => disconnected ? null : phantomAccount(provider);
   return {
@@ -35,7 +37,7 @@ export function createInjectedWallet(provider, name) {
       'standard:connect': {
         version: '1.0.0',
         async connect() {
-          await provider.connect(); disconnected = false;
+          await connect(); disconnected = false;
           const account = currentAccount();
           return { accounts: account ? [account] : [] };
         },
@@ -46,7 +48,7 @@ export function createInjectedWallet(provider, name) {
           const current = currentAccount();
           if (!current || !matchesPhantomAccount(provider, account, chain)) throw new LocalizedError('errorAccountChanged');
           const unsigned = VersionedTransaction.deserialize(transaction);
-          const signed = (await provider.signTransaction(unsigned)) ?? unsigned;
+          const signed = (await sign(unsigned)) ?? unsigned;
           if (!currentAccount() || !matchesPhantomAccount(provider, account, chain)) throw new LocalizedError('errorAccountChangedSigning');
           return [{ signedTransaction: Uint8Array.from(signed.serialize()) }];
         },

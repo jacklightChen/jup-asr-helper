@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Keypair, SystemInstruction, TransactionMessage, VersionedTransaction } from '@solana/web3.js';
-import { DONATION_ADDRESS, prepareDonation, verifyDonationSigned, submitDonation, donationStatus, donationRpc } from '../src/donation.mjs';
+import { DONATION_ADDRESS, prepareDonation, verifyDonationSigned, submitDonation, donationStatus, donationRpc } from '../src/donation.ts';
 
 const hash = Keypair.generate().publicKey.toBase58();
 const mockRpc = (fee = 5000, balance = 100000000) => async method => {

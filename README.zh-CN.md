@@ -54,14 +54,15 @@ GitHub Pages 网站地址：[jup-asr-helper.github.io](https://jup-asr-helper.gi
 
 ## 隐私
 
-无需助记词、私钥、Binance 交易所 API Key 或 Reown Project ID。前端没有分析统计或应用后端，只在 `localStorage` 保存界面语言；钱包连接与交易状态保留在当前页面内存中。Jupiter 会在领取查询时收到钱包公开地址，在提交时收到已签名领取交易。自愿捐赠通过 PublicNode 的 Solana 主网 RPC 查询余额并提交，该服务会收到公开地址和已签名的捐赠转账。托管及 API 提供商可能保留自己的请求日志。仓库不包含个人奖励数量或已签名交易；下方自愿捐款地址为公开信息。
+无需助记词、私钥、Binance 交易所 API Key 或 Reown Project ID。前端没有分析统计或应用后端，只在 `localStorage` 保存界面语言；钱包连接与交易状态保留在当前页面内存中。Jupiter 会在领取查询时收到钱包公开地址，在提交时收到已签名领取交易。捐赠记录查询会向 PublicNode 的 Solana 主网 RPC 发送公开的收款地址和交易编号。自愿捐赠也通过该 RPC 查询余额并提交，该服务会收到公开地址和已签名的捐赠转账。托管及 API 提供商可能保留自己的请求日志。仓库不包含个人奖励数量或已签名交易；下方自愿捐款地址为公开信息。
 
 ## 开发
 
-使用 Node.js 24 与 npm。按锁文件安装依赖，运行交易检查，然后构建静态网站：
+前端与构建脚本使用 TypeScript，并启用严格类型检查。使用 Node.js 24 与 npm；Node 通过原生类型擦除运行构建脚本和测试导入。按锁文件安装依赖，检查类型并运行交易测试，再构建静态网站：
 
 ```sh
 npm ci
+npm run typecheck
 npm test
 npm run build
 ```
@@ -91,14 +92,14 @@ https://datapi.jup.ag/rewards/v1/campaigns/asr-2026-q3
 
 这些活动接口来自对 Jupiter 奖励应用流程的观察，可能变化或拒绝不支持的客户端。返回格式无法识别时，页面会停止操作。本项目不提供使用私钥的通用命令行签名示例。
 
-支持后续 ASR 活动前，需要重新核对活动信息、合约及分发地址、指令结构、账户派生方式、费用及租金假设，并更新测试。只改活动名称并不足够。当前常量在 [`src/transaction.mjs`](src/transaction.mjs)，API 与钱包流程在 [`src/app.mjs`](src/app.mjs)。
+支持后续 ASR 活动前，需要重新核对活动信息、合约及分发地址、指令结构、账户派生方式、费用及租金假设，并更新测试。只改活动名称并不足够。当前常量在 [`src/transaction.ts`](src/transaction.ts)，API 与钱包流程在 [`src/app.ts`](src/app.ts)。
 
 ## GitHub Pages
 
 源码维护在 [`jacklightChen/jup-asr-helper`](https://github.com/jacklightChen/jup-asr-helper)。网站由 [`jup-asr-helper/jup-asr-helper.github.io`](https://github.com/jup-asr-helper/jup-asr-helper.github.io) 发布，保留其已启用的 **Deploy from a branch → `main` → `/ (root)`** 配置。无需自定义域名或部署密钥，其他 GitHub Pages 设置保持不变。
 
-发布前运行 `npm test` 和 `npm run build`，将源码提交并推送到个人仓库。将本次发布的 `src/`、`test/`、`build.mjs`、package 文件和 README 同步到组织主页仓库的独立检出目录，保留它的部署检查工作流。在该目录运行 `npm ci`、`npm test`、`npm run build:pages`，随后提交所有更新的源码与构建资源，推送组织仓库的 `main` 分支。保留 `.nojekyll` 和 `assets/` 中的旧哈希文件，缓存的 HTML 仍可能引用它们。
-源码的 [CI 工作流](https://github.com/jacklightChen/jup-asr-helper/blob/main/.github/workflows/ci.yml)会测试并构建。部署仓库还会检查已提交的页面资源与源码快照一致，这些检查均不修改 Pages 设置。组织仓库的 `main` 更新后，GitHub 的 **pages build and deployment** 工作流发布到 [https://jup-asr-helper.github.io/](https://jup-asr-helper.github.io/)。参见 [GitHub 发布来源官方文档](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)。
+发布前运行 `npm run typecheck`、`npm test` 和 `npm run build`，将源码提交并推送到个人仓库。将本次发布的 `src/`、`test/`、`build.ts`、`tsconfig.json`、package 文件和 README 同步到组织主页仓库的独立检出目录，保留它的部署检查工作流。在该目录运行 `npm ci`、`npm run typecheck`、`npm test`、`npm run build:pages`，随后提交所有更新的源码与构建资源，推送组织仓库的 `main` 分支。保留 `.nojekyll` 和 `assets/` 中的旧哈希文件，缓存的 HTML 仍可能引用它们。
+源码的 [CI 工作流](https://github.com/jacklightChen/jup-asr-helper/blob/main/.github/workflows/ci.yml)会检查类型、测试并构建。部署仓库还会检查已提交的页面资源与源码快照一致，这些检查均不修改 Pages 设置。组织仓库的 `main` 更新后，GitHub 的 **pages build and deployment** 工作流发布到 [https://jup-asr-helper.github.io/](https://jup-asr-helper.github.io/)。参见 [GitHub 发布来源官方文档](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)。
 
 ## 许可证
 
@@ -115,6 +116,8 @@ Solana 捐款地址：
 ```
 
 连接钱包后，可使用 **捐赠 0.01 SOL** 或 **捐赠 0.05 SOL** 按钮。每次都会单独向上方地址转入所选 SOL，另需支付网络费，并由钱包授权确认。工具核对收款地址、固定金额、原始交易消息与签名后，通过 [PublicNode Solana 主网 RPC](https://solana.publicnode.com/) 提交。收到交易编号不等于确认成功，请使用 **查询捐赠状态** 或链上链接核实。提交或确认结果未知时，按钮保持禁用，避免重复转账；不会自动重新发送。参见 Solana [提交交易](https://solana.com/docs/rpc/http/sendtransaction)与[确认状态](https://solana.com/docs/rpc/http/getsignaturestatuses)文档。
+
+捐赠区还会查询该地址最近 20 笔已确认交易，展示最多 10 条 SOL 转入记录，包括发送地址、精确 SOL 金额、UTC+8 时间和 Solscan 交易链接。通过钱包手动转入的 SOL 也可能显示。链上记录无法证明捐赠意图，因此这是近期转入视图，不代表完整捐赠账本。只统计成功的 System Program 转账（包括内部指令），排除转出、代币转账和租金相关余额变化。可手动刷新，页面确认捐赠成功后也会刷新。查询无需连接钱包或签名；RPC 查询失败或不完整时会显示提示，不影响领取。参见 Solana [签名记录](https://solana.com/docs/rpc/http/getsignaturesforaddress)与[解析交易](https://solana.com/docs/rpc/http/gettransaction)文档。
 
 捐赠完全自愿，不影响领取资格。公共 RPC 可用性及限流可能影响按钮，也可以在钱包中手动转账。
 

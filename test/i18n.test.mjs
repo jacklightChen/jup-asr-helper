@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import {
   chooseLanguage, translations, translate, setLanguage, LocalizedError,
   localizedErrorMessage, transactionErrorTranslations,
-} from '../src/i18n.mjs';
+} from '../src/i18n.ts';
 
 const source = path => readFileSync(new URL(path, import.meta.url), 'utf8');
 
@@ -46,7 +46,7 @@ test('both languages render all static UI messages and preserve dynamic placehol
 });
 
 test('every transaction verifier error has an English message and preserves Chinese detail', () => {
-  const verifier = source('../src/transaction.mjs');
+  const verifier = source('../src/transaction.ts');
   // Guard-style errors append a stop suffix; direct errors already contain their full text.
   const guarded = [...verifier.matchAll(/requireCondition\([\s\S]*?,\s*'([^']+)'\);/g)].map(match => `${match[1]}，已停止。`);
   const direct = [...verifier.matchAll(/throw new Error\('([^']+)'\)/g)].map(match => match[1]);

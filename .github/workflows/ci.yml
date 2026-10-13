@@ -23,6 +23,8 @@ jobs:
           package-manager-cache: false
       - name: Install locked dependencies
         run: npm ci
+      - name: Check TypeScript types
+        run: npm run typecheck
       - name: Test transaction validation
         run: npm test
       - name: Build static site

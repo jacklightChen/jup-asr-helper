@@ -4,9 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node build.mjs",
-    "build:pages": "node build.mjs --pages",
-    "test": "node --test"
+    "typecheck": "tsc --noEmit",
+    "build": "node build.ts",
+    "build:pages": "node build.ts --pages",
+    "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
     "@solana/web3.js": "1.98.4",
@@ -16,12 +17,15 @@
     "tweetnacl": "1.0.3"
   },
   "devDependencies": {
-    "esbuild": "0.25.10"
+    "@types/bs58": "4.0.4",
+    "@types/node": "24.10.0",
+    "esbuild": "0.25.10",
+    "typescript": "7.0.2"
   },
   "description": "Solana wallet helper for Jupiter ASR claims",
   "license": "MIT",
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "repository": {
     "type": "git",

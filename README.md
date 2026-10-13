@@ -54,14 +54,15 @@ These checks cover the supported transaction shape; they are not a smart-contrac
 
 ## Privacy
 
-No seed phrase, private key, Binance exchange API key, or Reown Project ID is needed. The frontend has no analytics or application backend. It stores only the selected interface language in `localStorage`; wallet connection and transaction state remain in page memory. Jupiter receives the public wallet address for claim queries and the signed claim transaction on submission. Optional donations use PublicNode’s Solana mainnet RPC, which receives the public address for balance queries and the signed transfer on submission. Hosting and API providers can retain their own request logs. The repository contains no personal claim allocation or signed transaction. The voluntary donation address below is intentionally public.
+No seed phrase, private key, Binance exchange API key, or Reown Project ID is needed. The frontend has no analytics or application backend. It stores only the selected interface language in `localStorage`; wallet connection and transaction state remain in page memory. Jupiter receives the public wallet address for claim queries and the signed claim transaction on submission. Donation history queries send the public recipient address and transaction IDs to PublicNode’s Solana mainnet RPC. Optional donations use the same RPC, which receives the public address for balance queries and the signed transfer on submission. Hosting and API providers can retain their own request logs. The repository contains no personal claim allocation or signed transaction. The voluntary donation address below is intentionally public.
 
 ## Develop
 
-Use Node.js 24 and npm. Install the locked dependencies, run the transaction checks, and build the static site:
+The frontend and build script are written in TypeScript with strict type checking. Use Node.js 24 and npm; Node runs the build script and test imports with native type stripping. Install the locked dependencies, check types, run the transaction checks, and build the static site:
 
 ```sh
 npm ci
+npm run typecheck
 npm test
 npm run build
 ```
@@ -91,14 +92,14 @@ https://datapi.jup.ag/rewards/v1/campaigns/asr-2026-q3
 
 These campaign endpoints are the flow observed from Jupiter's rewards application. They can change or reject unsupported clients; the app stops on an unrecognized response. No generic CLI private-key signing example is included.
 
-For a future ASR campaign, review the new metadata, contract/distributor addresses, instruction layouts, account derivations, fee/rent assumptions, and tests before changing the campaign. Changing only the slug is insufficient. The supported constants live in [`src/transaction.mjs`](src/transaction.mjs), and the API selection and wallet flow live in [`src/app.mjs`](src/app.mjs).
+For a future ASR campaign, review the new metadata, contract/distributor addresses, instruction layouts, account derivations, fee/rent assumptions, and tests before changing the campaign. Changing only the slug is insufficient. The supported constants live in [`src/transaction.ts`](src/transaction.ts), and the API selection and wallet flow live in [`src/app.ts`](src/app.ts).
 
 ## GitHub Pages
 
 Source is maintained at [`jacklightChen/jup-asr-helper`](https://github.com/jacklightChen/jup-asr-helper). The website is published from [`jup-asr-helper/jup-asr-helper.github.io`](https://github.com/jup-asr-helper/jup-asr-helper.github.io), using its preserved **Deploy from a branch → `main` → `/ (root)`** configuration. No custom domain or deployment secret is required. Other GitHub Pages settings are unchanged.
 
-Before releasing, run `npm test` and `npm run build`, then commit and push source to `jacklightChen/jup-asr-helper`. Sync the release's `src/`, `test/`, `build.mjs`, package files, and READMEs into a separate checkout of the organization homepage repository, preserving its deployment verification workflow. In that checkout, run `npm ci`, `npm test`, and `npm run build:pages`, then commit and push all updated source and generated assets to its `main` branch. Keep `.nojekyll` and older hashed files in `assets/`; cached HTML may still reference them.
-The source [CI workflow](https://github.com/jacklightChen/jup-asr-helper/blob/main/.github/workflows/ci.yml) runs tests and builds. The deployment repository additionally checks that the committed Pages assets match its source snapshot. Neither check changes Pages settings. GitHub's **pages build and deployment** run publishes [https://jup-asr-helper.github.io/](https://jup-asr-helper.github.io/) when the organization's `main` branch is updated. See GitHub's [publishing-source documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site).
+Before releasing, run `npm run typecheck`, `npm test`, and `npm run build`, then commit and push source to `jacklightChen/jup-asr-helper`. Sync the release's `src/`, `test/`, `build.ts`, `tsconfig.json`, package files, and READMEs into a separate checkout of the organization homepage repository, preserving its deployment verification workflow. In that checkout, run `npm ci`, `npm run typecheck`, `npm test`, and `npm run build:pages`, then commit and push all updated source and generated assets to its `main` branch. Keep `.nojekyll` and older hashed files in `assets/`; cached HTML may still reference them.
+The source [CI workflow](https://github.com/jacklightChen/jup-asr-helper/blob/main/.github/workflows/ci.yml) checks types, runs tests, and builds. The deployment repository additionally checks that the committed Pages assets match its source snapshot. Neither check changes Pages settings. GitHub's **pages build and deployment** run publishes [https://jup-asr-helper.github.io/](https://jup-asr-helper.github.io/) when the organization's `main` branch is updated. See GitHub's [publishing-source documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site).
 
 ## License
 
@@ -115,6 +116,8 @@ Solana address:
 ```
 
 The page offers **Donate 0.01 SOL** and **Donate 0.05 SOL** after wallet connection. Each is a separate SOL transfer to the address above, plus the network fee. The wallet must approve it. The helper verifies the recipient, exact preset amount, original transaction message, and signature before submitting to [PublicNode's Solana mainnet RPC](https://solana.publicnode.com/). A returned transaction ID is not treated as confirmation; use **Check donation status** or the transaction link. If submission or confirmation is unknown, the donation buttons stay disabled to avoid a duplicate transfer. No automatic resend occurs. See Solana's [submission](https://solana.com/docs/rpc/http/sendtransaction) and [confirmation](https://solana.com/docs/rpc/http/getsignaturestatuses) documentation.
+
+The donation section also reads this address’s latest 20 confirmed transactions and displays up to 10 incoming SOL transfer records, with the sender, exact SOL amount, UTC+8 time, and Solscan transaction link. It includes direct manual transfers to the address. On-chain data cannot prove donation intent; this is a recent-transfer view, not a complete donor ledger. Only explicit successful System Program transfers (including inner instructions) are counted; outgoing transfers, token transfers, and rent-related balance changes are excluded. Refresh manually or after the page confirms a donation. Queries need no wallet connection or signature. Failed or incomplete RPC reads show a notice and do not block claims. See Solana’s [signature history](https://solana.com/docs/rpc/http/getsignaturesforaddress) and [parsed transaction](https://solana.com/docs/rpc/http/gettransaction) documentation.
 
 Donations are voluntary and do not affect claim eligibility. Public RPC availability and rate limits can affect donation buttons; manual transfers in the wallet remain available.
 

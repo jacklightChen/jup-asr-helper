@@ -3,11 +3,11 @@ import { mkdir, copyFile, writeFile, readFile, rm, cp } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 await rm('dist', { recursive: true, force: true });
 await mkdir('dist', { recursive: true });
-await build({ entryPoints: ['src/app.mjs'], bundle: true, minify: true,
+await build({ entryPoints: ['src/app.ts'], bundle: true, minify: true,
   target: ['es2020'], platform: 'browser', format: 'esm', outfile: 'dist/app.js',
   legalComments: 'eof', sourcemap: false });
 await copyFile('src/style.css', 'dist/style.css');
-const hash = bytes => createHash('sha256').update(bytes).digest('hex').slice(0, 16);
+const hash = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex').slice(0, 16);
 const js = await readFile('dist/app.js'), css = await readFile('dist/style.css');
 const assets = { js: `assets/app-${hash(js)}.js`, css: `assets/style-${hash(css)}.css` };
 await mkdir('dist/assets', { recursive: true });

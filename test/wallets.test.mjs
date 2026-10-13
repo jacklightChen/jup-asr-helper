@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Keypair, SystemProgram, TransactionMessage, VersionedTransaction } from '@solana/web3.js';
-import { verifySignedTransaction, sameBytes } from '../src/transaction.mjs';
-import { supportedWallets, walletBrand, selectWallet, SOLANA_MAINNET, SOLANA_MAINNET_GENESIS, mainnetChain } from '../src/wallets.mjs';
-import { createPhantomWallet, createInjectedWallet, phantomAccount, matchesPhantomAccount } from '../src/phantom.mjs';
+import { verifySignedTransaction, sameBytes } from '../src/transaction.ts';
+import { supportedWallets, walletBrand, selectWallet, SOLANA_MAINNET, SOLANA_MAINNET_GENESIS, mainnetChain } from '../src/wallets.ts';
+import { createPhantomWallet, createInjectedWallet, phantomAccount, matchesPhantomAccount } from '../src/phantom.ts';
 
 const neverCall = () => { throw new Error('Discovery tests must not request connection or signing'); };
-const wallet = name => ({ name, chains: [SOLANA_MAINNET], features: {
+const wallet = name => ({ name, accounts: [], chains: [SOLANA_MAINNET], features: {
   'standard:connect': { connect: neverCall }, 'solana:signTransaction': { signTransaction: neverCall },
 } });
 const keyA = '11111111111111111111111111111111';

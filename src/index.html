@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src https://datapi.jup.ag; img-src 'self' data:; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <title data-i18n="pageTitle">JUP ASR · 钱包签名助手</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main>
+    <header class="topbar"><a class="wordmark" href="#">ASR<span>HELPER</span></a><div class="topbar-controls"><span class="network"><i></i> <span data-i18n="mainnet">Solana 主网</span></span><div class="language-switch" role="group" aria-label="Language / 语言"><button type="button" data-language="zh" lang="zh-CN" aria-pressed="true">中文</button><button type="button" data-language="en" lang="en" aria-pressed="false">EN</button></div></div></header>
+    <section class="hero">
+      <div class="eyebrow" data-i18n="heroEyebrow">社区接口领取助手</div>
+      <h1><span data-i18n="heroTitle1">领取 ASR，</span><br><span data-i18n="heroTitle2">在钱包中确认。</span></h1>
+      <p class="intro"><span data-i18n="intro1">支持 Binance Wallet 和 Phantom。</span><br><span data-i18n="intro2">连接、核对交易，再由你授权签名。</span></p>
+      <a id="phantom-open" class="wallet-open" data-i18n="openInPhantom" hidden>在 Phantom 中打开 ↗</a>
+      <div class="orbit" aria-hidden="true"><div class="orbit-ring"></div><span>JUP</span><i></i></div>
+    </section>
+
+    <section class="campaign panel" data-i18n-aria="campaignInfo" aria-label="活动信息">
+      <div class="campaign-head"><span class="tag">ASR 2026 Q3</span><a href="https://jup.ag/rewards/asr-2026-q3" target="_blank" rel="noopener noreferrer" data-i18n="officialCampaign">官方活动 ↗</a></div>
+      <div class="reward-label" data-i18n="rewardLabel">可领取 · Staked JUP</div>
+      <div class="reward"><span id="amount">—</span><small>JUP</small></div>
+      <p id="allocation-status" class="muted" data-i18n="allocationInitial">连接钱包后查询你的奖励。</p>
+      <div class="divider"></div>
+      <p id="campaign-date" class="micro" data-i18n="campaignLoading">正在读取官方领取时间…</p>
+      <p id="compatibility" class="notice" data-i18n="requirementsLoading">正在读取活动要求…</p>
+    </section>
+
+    <section class="steps" data-i18n-aria="claimSteps" aria-label="领取步骤">
+      <article class="step panel" id="step-connect">
+        <div class="step-heading"><span class="step-number">01</span><div><h2 data-i18n="connectTitle">连接钱包</h2><p data-i18n="connectDescription">选择要使用的 Solana 钱包账户。</p></div><span class="step-check" id="connect-check"></span></div>
+        <div id="wallet-discovery" class="micro" data-i18n="detectingWallet">检测钱包中…</div>
+        <label id="wallet-choice-wrap" class="micro" hidden><span data-i18n="chooseWallet">选择钱包</span><select id="wallet-choice"></select></label>
+        <div id="account-info" class="account" hidden><span id="wallet-name"></span><code id="account-address"></code></div>
+        <label id="account-choice-wrap" class="micro" hidden><span data-i18n="chooseAccount">选择 Solana 账户</span><select id="account-choice"></select></label>
+        <button id="connect" class="button primary" data-i18n="connectButton">连接钱包</button>
+      </article>
+      <article class="step panel" id="step-prepare">
+        <div class="step-heading"><span class="step-number">02</span><div><h2 data-i18n="prepareTitle">准备领取交易</h2><p data-i18n="prepareDescription">从 Jupiter 获取本次领取交易。</p></div><span class="step-check" id="prepare-check"></span></div>
+        <button id="prepare" class="button secondary" data-i18n="prepareButton" disabled>准备交易</button>
+      </article>
+      <article class="step panel" id="step-sign">
+        <div class="step-heading"><span class="step-number">03</span><div><h2 data-i18n="signTitle">核对并签名</h2><p data-i18n="signDescription">签名授权会在所选钱包中弹出。</p></div><span class="step-check" id="sign-check"></span></div>
+        <div id="review" hidden>
+          <div class="review-row"><span data-i18n="claimEffect">领取结果</span><strong data-i18n="stakeDestination">加入 JUP 质押账户</strong></div>
+          <div class="review-row"><span data-i18n="networkLabel">网络</span><strong data-i18n="mainnet">Solana 主网</strong></div>
+          <p id="operation-effect" class="operation-note"></p>
+          <p id="cost-estimate" class="micro"></p>
+          <p id="freshness" class="micro"></p>
+          <details><summary data-i18n="transactionDetails">查看完整交易信息</summary><div class="transaction-detail"><p data-i18n="feePayer">手续费付款账户</p><code id="fee-payer"></code><p data-i18n="programs">调用程序</p><div id="programs"></div><p data-i18n="signers">必要签名账户</p><div id="signers"></div><p id="tx-meta"></p><p data-i18n="transactionHash">交易消息 SHA-256</p><code id="tx-hash"></code></div></details>
+        </div>
+        <button id="sign" class="button primary" data-i18n="signButton" disabled>在钱包中签名并提交</button>
+        <p class="micro sign-note" data-i18n="signNote">提交前会检查签名与原交易一致。</p>
+      </article>
+    </section>
+
+    <section id="status-box" class="status panel" aria-live="polite" hidden><span id="status-label"></span><p id="status-text"></p></section>
+    <section id="result" class="result panel" hidden>
+      <div class="eyebrow" data-i18n="submissionResult">提交结果</div><h2 id="result-title" data-i18n="resultSubmitted">交易已提交</h2>
+      <a id="transaction-link" data-i18n="viewTransaction" target="_blank" rel="noopener noreferrer" hidden>查看链上交易 ↗</a>
+      <code id="transaction-id" hidden></code>
+      <p id="verification-status" class="muted"></p>
+      <button id="refresh-status" class="button secondary" data-i18n="refreshStatus">查询领取状态</button>
+      <details><summary data-i18n="apiDetails">接口返回详情</summary><pre id="result-json"></pre></details>
+    </section>
+    <section class="donation panel" aria-labelledby="donation-title">
+      <div class="eyebrow" data-i18n="donationEyebrow">自愿支持</div>
+      <h2 id="donation-title" data-i18n="donationTitle">支持这个工具</h2>
+      <p class="muted" data-i18n="donationDescription">如果这个工具对你有帮助，欢迎自愿捐赠，支持开发。</p>
+      <p class="micro" data-i18n="donationNetwork">Solana 捐款地址</p>
+      <code id="donation-address">5QDviToVpnePujox1tm3cwSsAwp9WKChiaJnWWSbHS3H</code>
+      <button id="copy-donation" type="button" class="button secondary" data-i18n="copyDonation">复制地址</button>
+      <p id="donation-copy-status" class="micro" aria-live="polite"></p>
+    </section>
+    <footer><p data-i18n="footerCommunity">社区开源助手，使用 Wallet Standard 和 Phantom 官方接口与 Jupiter 活动 API；与 Binance、Phantom 或 Jupiter 无隶属关系。</p><p data-i18n="footerPrivacy">本页不会请求私钥或助记词。奖励由官方交易执行。</p><div><a href="https://developers.binance.com/en/docs/products/web3-connect/solana-provider" target="_blank" rel="noopener noreferrer" data-i18n="binanceDocs">Binance 接口文档 ↗</a><span>·</span><a href="https://docs.phantom.com/solana/sending-a-transaction" target="_blank" rel="noopener noreferrer" data-i18n="phantomDocs">Phantom 接口文档 ↗</a><span>·</span><a href="https://jup.ag/rewards/asr-2026-q3" target="_blank" rel="noopener noreferrer">Jupiter ↗</a></div></footer>
+  </main>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

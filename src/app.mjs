@@ -1,0 +1,395 @@
+import { DONATION_ADDRESS } from './donation.mjs';
+import { getWallets } from '@wallet-standard/app';
+import { PublicKey } from '@solana/web3.js';
+import { inspectPrepared, verifySignedTransaction, sameBytes, CURRENT_CAMPAIGN } from './transaction.mjs';
+import { STORAGE_KEY, chooseLanguage, getLanguage, getLocale, setLanguage, translate as t, LocalizedError, localizedErrorMessage } from './i18n.mjs';
+import { supportedWallets, walletBrand, selectWallet, SOLANA_MAINNET } from './wallets.mjs';
+import { createPhantomWallet } from './phantom.mjs';
+
+const API = 'https://datapi.jup.ag/rewards/v1/campaigns/asr-2026-q3';
+const CHAIN = SOLANA_MAINNET;
+const MAX_PREPARE_AGE_MS = 45000;
+const $ = id => document.getElementById(id);
+const registry = getWallets();
+const state = { selectedWallet: null, availableWallets: [], wallet: null, account: null, accounts: [], metadata: null, stats: null,
+  prepared: null, preparedAt: 0, busy: false, submitted: false, generation: 0, unsubscribe: null };
+const formatAmount = amount => new Intl.NumberFormat(getLocale(), { maximumFractionDigits: 6 }).format(amount);
+const formatSol = lamports => (Number(lamports) / 1e9).toFixed(9).replace(/0+$/, '').replace(/\.$/, '');
+
+// Store message descriptors so changing languages also updates active status/error text.
+const translatedNodes = new Map();
+function setText(id, keyOrRender, values = {}) {
+  const render = typeof keyOrRender === 'function' ? keyOrRender : () => t(keyOrRender, values);
+  translatedNodes.set(id, render);
+  $(id).textContent = render();
+}
+function showStatus(label, message, style = '', values = {}) {
+  $('status-box').hidden = false;
+  $('status-box').className = `status panel ${style}`;
+  setText('status-label', label);
+  setText('status-text', message, values);
+}
+function applyLanguage(language, persist = false) {
+  setLanguage(language);
+  document.documentElement.lang = language === 'zh' ? 'zh-CN' : 'en';
+  document.querySelectorAll('[data-i18n]').forEach(node => { node.textContent = t(node.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-aria]').forEach(node => { node.setAttribute('aria-label', t(node.dataset.i18nAria)); });
+  document.querySelectorAll('[data-language]').forEach(button => { button.setAttribute('aria-pressed', String(button.dataset.language === language)); });
+  for (const [id, render] of translatedNodes) $(id).textContent = render();
+  if (state.metadata) renderMetadata(state.metadata);
+  if (state.stats) renderStats(state.stats);
+  updateDiscovery(); updateFreshness();
+  $('phantom-open').hidden = location.protocol !== 'https:';
+  if (location.protocol === 'https:') {
+    // Only share this page path and language; never carry account-related query data.
+    const destination = new URL(location.pathname, location.origin);
+    destination.searchParams.set('lang', language);
+    $('phantom-open').href = `https://phantom.com/ul/browse/${encodeURIComponent(destination.href)}?ref=${encodeURIComponent(location.origin)}`;
+  }
+  if (persist) {
+    try { localStorage.setItem(STORAGE_KEY, language); } catch { /* A blocked storage API must not block signing. */ }
+    try {
+      const url = new URL(location.href); url.searchParams.set('lang', language);
+      history.replaceState(null, '', url);
+    } catch { /* The visible switch works even when URL updates are unavailable. */ }
+  }
+}
+
+function invalidatePrepared() {
+  state.prepared = null;
+  state.preparedAt = 0;
+  $('review').hidden = true;
+  $('prepare-check').textContent = '';
+  updateButtons();
+}
+
+function campaignOpen() {
+  const campaign = state.metadata;
+  return campaign && Date.now() >= Date.parse(campaign.claimStartsAt) && Date.now() < Date.parse(campaign.claimEndsAt);
+}
+
+function updateButtons() {
+  const canPrepare = state.account && state.stats && state.stats.unclaimedAmount > 0 && campaignOpen();
+  $('connect').disabled = state.busy || state.submitted || (state.availableWallets.length > 1 && !state.selectedWallet);
+  $('prepare').disabled = state.busy || state.submitted || !canPrepare;
+  $('sign').disabled = state.busy || state.submitted || !state.prepared || Date.now() - state.preparedAt >= MAX_PREPARE_AGE_MS;
+  $('refresh-status').disabled = state.busy || !state.account;
+  $('account-choice').disabled = state.busy || state.submitted;
+  $('wallet-choice').disabled = state.busy || state.submitted;
+  setText('connect', state.account ? 'reconnectButton' : 'connectButton');
+  setText('prepare', state.prepared ? 'reprepareButton' : 'prepareButton');
+}
+
+let phantomProvider = null, phantomWallet = null;
+function detectedWallets() {
+  const wallets = supportedWallets(registry.get());
+  const provider = window.phantom?.solana;
+  if (provider !== phantomProvider) { phantomProvider = provider; phantomWallet = createPhantomWallet(provider); }
+  if (phantomWallet && !wallets.some(wallet => walletBrand(wallet) === 'phantom')) wallets.push(phantomWallet);
+  return wallets;
+}
+const walletIds = new WeakMap();
+let nextWalletId = 0;
+function walletId(wallet) {
+  if (!walletIds.has(wallet)) walletIds.set(wallet, `wallet-${++nextWalletId}`);
+  return walletIds.get(wallet);
+}
+function clearAccount(allocationKey = 'allocationInitial') {
+  state.generation++;
+  state.unsubscribe?.(); state.unsubscribe = null;
+  state.wallet = null; state.account = null; state.accounts = []; state.stats = null;
+  invalidatePrepared();
+  $('account-info').hidden = true; $('account-choice-wrap').hidden = true;
+  $('account-choice').replaceChildren();
+  $('connect-check').textContent = ''; $('amount').textContent = '—';
+  setText('allocation-status', allocationKey);
+}
+function updateDiscovery() {
+  const all = registry.get();
+  const found = detectedWallets();
+  const previous = state.selectedWallet;
+  state.availableWallets = found;
+  state.selectedWallet = selectWallet(found, previous);
+  if (previous && !found.includes(previous)) {
+    clearAccount('allocationWalletChanged');
+    showStatus('statusWalletChanged', 'reconnectPrepare');
+  }
+  const placeholder = document.createElement('option'); placeholder.value = '';
+  placeholder.textContent = t('chooseWallet'); placeholder.disabled = true;
+  const options = found.map((wallet, index) => {
+    const option = document.createElement('option'); option.value = walletId(wallet);
+    option.textContent = found.filter(item => item.name === wallet.name).length > 1 ? `${wallet.name} (${index + 1})` : wallet.name;
+    return option;
+  });
+  $('wallet-choice').replaceChildren(placeholder, ...options);
+  $('wallet-choice').value = state.selectedWallet ? walletId(state.selectedWallet) : '';
+  $('wallet-choice-wrap').hidden = found.length < 2;
+  if (found.length) setText('wallet-discovery', () => t('walletDetected', { wallets: found.map(wallet => wallet.name).join(getLanguage() === 'zh' ? '、' : ', ') }));
+  else if (all.length) setText('wallet-discovery', 'walletUnsupported');
+  else setText('wallet-discovery', 'walletBrowserRequired');
+  updateButtons();
+}
+
+async function api(path = '', body) {
+  const post = body !== undefined;
+  let response;
+  try {
+    response = await fetch(API + path, { method: post ? 'POST' : 'GET', credentials: 'omit', redirect: 'error', cache: 'no-store',
+      headers: { accept: 'application/json', ...(post ? { 'content-type': 'application/json' } : {}) },
+      ...(post ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(post ? 90000 : 30000) });
+  } catch (error) {
+    throw new LocalizedError(post ? 'errorSubmitUnknown' : 'errorApiRead');
+  }
+  const raw = await response.text();
+  let value;
+  try { value = JSON.parse(raw); } catch { value = null; }
+  if (!response.ok) {
+    const detail = value?.message ?? value?.error ?? raw;
+    throw new LocalizedError('errorHttp', { status: response.status, detail: typeof detail === 'string' ? detail.slice(0, 500) : JSON.stringify(detail).slice(0, 500) });
+  }
+  if (value === null) throw new LocalizedError('errorApiFormat');
+  return value;
+}
+
+function validateMetadata(response) {
+  const campaign = response.campaign;
+  if (!campaign || campaign.slug !== 'asr-2026-q3' || campaign.reward?.assetId !== CURRENT_CAMPAIGN.mint ||
+    campaign.reward?.rewardName !== 'Staked JUP' || !Number.isFinite(Date.parse(campaign.claimStartsAt)) ||
+    !Number.isFinite(Date.parse(campaign.claimEndsAt))) throw new LocalizedError('errorMetadata');
+  return campaign;
+}
+
+function renderMetadata(campaign) {
+  const format = timestamp => new Date(timestamp).toLocaleString(getLocale(), { timeZone: 'Asia/Shanghai',
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+  setText('campaign-date', () => t('claimWindow', { start: format(campaign.claimStartsAt), end: format(campaign.claimEndsAt) }));
+  setText('compatibility', campaign.reward.onlyClaimableThroughJup === true ? 'compatibilityJupiterOnly' : 'compatibilityApi');
+}
+
+function validateStats(stats) {
+  if (stats.assetId !== CURRENT_CAMPAIGN.mint || stats.rewardType !== 'retroactive' ||
+    typeof stats.unclaimedAmount !== 'number' || !Number.isFinite(stats.unclaimedAmount) || stats.unclaimedAmount < 0 ||
+    typeof stats.claimedAmount !== 'number' || !Number.isFinite(stats.claimedAmount) || stats.claimedAmount < 0) {
+    throw new LocalizedError('errorStats');
+  }
+  return stats;
+}
+
+function renderStats(stats) {
+  $('amount').textContent = formatAmount(stats.unclaimedAmount);
+  setText('allocation-status', () => t(stats.unclaimedAmount > 0 ? 'allocationAvailable' :
+    stats.claimedAmount > 0 ? 'allocationClaimed' : 'allocationNone', { amount: formatAmount(stats.claimedAmount) }));
+  updateButtons();
+}
+
+function eligibleAccounts(accounts) {
+  return accounts.filter(account => account.chains.includes(CHAIN) && account.features.includes('solana:signTransaction') &&
+    sameBytes(new PublicKey(account.address).toBytes(), account.publicKey));
+}
+
+async function useAccount(account) {
+  const generation = ++state.generation;
+  state.account = account; state.stats = null;
+  invalidatePrepared();
+  $('amount').textContent = '—';
+  setText('allocation-status', 'allocationLoading');
+  $('account-info').hidden = false;
+  $('wallet-name').textContent = state.wallet.name;
+  $('account-address').textContent = account.address;
+  $('connect-check').textContent = '✓';
+  const stats = validateStats(await api(`/stats/${encodeURIComponent(account.address)}`));
+  if (generation !== state.generation) return;
+  state.stats = stats; renderStats(stats);
+}
+
+async function connect() {
+  updateDiscovery();
+  const wallets = detectedWallets();
+  if (!wallets.length) throw new LocalizedError('errorWalletMissing');
+  const wallet = state.selectedWallet;
+  if (!wallet || !wallets.includes(wallet)) throw new LocalizedError('errorWalletSelection');
+  const generation = state.generation;
+  invalidatePrepared();
+  const { accounts } = await wallet.features['standard:connect'].connect();
+  if (generation !== state.generation || state.selectedWallet !== wallet || !detectedWallets().includes(wallet)) {
+    throw new LocalizedError('errorWalletChanged');
+  }
+  const available = eligibleAccounts(accounts);
+  if (!available.length) throw new LocalizedError('errorAccountUnavailable');
+  state.unsubscribe?.();
+  state.wallet = wallet; state.accounts = available;
+  $('account-choice').replaceChildren(...available.map(account => {
+    const option = document.createElement('option'); option.value = account.address;
+    option.textContent = `${account.address.slice(0, 8)}…${account.address.slice(-6)}`; return option;
+  }));
+  $('account-choice-wrap').hidden = available.length < 2;
+  if (wallet.features['standard:events']) {
+    state.unsubscribe = wallet.features['standard:events'].on('change', () => {
+      if (state.wallet !== wallet) return;
+      const stillAvailable = wallet.accounts.some(account => account.address === state.account?.address &&
+        account.chains.includes(CHAIN) && account.features.includes('solana:signTransaction'));
+      if (!stillAvailable) {
+        clearAccount('allocationChanged');
+        showStatus('statusAccountChanged', 'reconnectPrepare');
+      }
+    });
+  }
+  await useAccount(available[0]);
+  if (state.wallet === wallet && state.account) showStatus('statusConnected', 'connectedMessage', 'success', { wallet: wallet.name });
+}
+
+function renderCodes(id, values) {
+  $(id).replaceChildren(...values.map(value => { const element = document.createElement('code'); element.textContent = value; return element; }));
+}
+
+async function prepare() {
+  if (!state.account) throw new LocalizedError('errorConnectFirst');
+  const generation = state.generation, address = state.account.address;
+  invalidatePrepared();
+  showStatus('statusPreparing', 'preparingMessage');
+  const [metadata, stats] = await Promise.all([api(), api(`/stats/${encodeURIComponent(address)}`)]);
+  if (generation !== state.generation) throw new LocalizedError('errorAccountChanged');
+  state.metadata = validateMetadata(metadata); renderMetadata(state.metadata);
+  state.stats = validateStats(stats); renderStats(state.stats);
+  if (!campaignOpen()) throw new LocalizedError('errorWindowClosed');
+  if (state.stats.unclaimedAmount <= 0) throw new LocalizedError('errorNoReward');
+  const claim = await api(`/claim?address=${encodeURIComponent(address)}`);
+  if (generation !== state.generation) throw new LocalizedError('errorAccountChangedPrepare');
+  const prepared = inspectPrepared(claim.transaction, address);
+  const feature = state.wallet.features['solana:signTransaction'];
+  if (!feature.supportedTransactionVersions?.includes(prepared.version)) throw new LocalizedError('errorTransactionVersion');
+  const expectedRaw = BigInt(Math.round(state.stats.unclaimedAmount * 1e6));
+  if (prepared.operations.claimedRaw !== expectedRaw) throw new LocalizedError('errorAmountMismatch');
+  const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', prepared.message));
+  if (generation !== state.generation) throw new LocalizedError('errorAccountChangedPrepare');
+  const { operations } = prepared;
+  $('fee-payer').textContent = prepared.feePayer;
+  renderCodes('programs', prepared.programIds); renderCodes('signers', prepared.signers);
+  setText('tx-meta', 'transactionMeta', { version: prepared.version, count: prepared.instructionCount });
+  $('tx-hash').textContent = [...hash].map(value => value.toString(16).padStart(2, '0')).join('');
+  setText('operation-effect', () => `${operations.createsEscrow ? t('createsEscrow') : ''}${operations.enablesMaxLock ? t('enablesMaxLock') : ''}${t('stakingEffect')}`);
+  setText('cost-estimate', 'costEstimate', { fee: formatSol(operations.networkFeeLamports), rent: formatSol(operations.rentLamports), total: formatSol(operations.networkFeeLamports + operations.rentLamports) });
+  state.prepared = prepared; state.preparedAt = Date.now();
+  $('review').hidden = false; $('prepare-check').textContent = '✓';
+  updateFreshness();
+  showStatus('statusPrepared', 'preparedMessage', 'success');
+}
+
+function updateFreshness() {
+  if (state.prepared) {
+    const remaining = Math.max(0, Math.ceil((MAX_PREPARE_AGE_MS - (Date.now() - state.preparedAt)) / 1000));
+    setText('freshness', remaining ? 'freshnessRemaining' : 'freshnessExpired', { seconds: remaining });
+  }
+  updateButtons();
+}
+
+async function verifyStatus() {
+  if (!state.account) throw new LocalizedError('errorConnectFirst');
+  const address = state.account.address, generation = state.generation;
+  const stats = validateStats(await api(`/stats/${encodeURIComponent(address)}`));
+  if (generation !== state.generation) return;
+  state.stats = stats; renderStats(stats);
+  const confirmed = stats.unclaimedAmount === 0 && stats.claimedAmount > 0;
+  setText('verification-status', () => t(confirmed ? 'verificationConfirmed' : 'verificationPending', { amount: formatAmount(confirmed ? stats.claimedAmount : stats.unclaimedAmount) }));
+  if (confirmed) {
+    setText('result-title', 'resultConfirmed'); $('sign-check').textContent = '✓';
+    showStatus('statusClaimed', () => t('claimedMessage', { amount: formatAmount(stats.claimedAmount) }), 'success');
+  } else showStatus('statusUpdated', () => t('verificationPending', { amount: formatAmount(stats.unclaimedAmount) }));
+}
+
+async function signAndSubmit() {
+  const { account, wallet, prepared } = state;
+  if (!account || !wallet || !prepared || Date.now() - state.preparedAt >= MAX_PREPARE_AGE_MS) {
+    throw new LocalizedError('errorPrepareAgain');
+  }
+  const generation = state.generation;
+  if (state.selectedWallet !== wallet || !detectedWallets().includes(wallet)) throw new LocalizedError('errorWalletChanged');
+  if (!wallet.accounts.some(item => item.address === account.address)) throw new LocalizedError('errorAccountChanged');
+  showStatus('statusAuthorization', 'authorizationMessage', '', { wallet: wallet.name });
+  let signedOutput;
+  try {
+    const outputs = await wallet.features['solana:signTransaction'].signTransaction({
+      account, chain: CHAIN, transaction: Uint8Array.from(prepared.bytes)
+    });
+    if (!outputs || outputs.length !== 1) throw new LocalizedError('errorOutputCount');
+    signedOutput = outputs[0].signedTransaction;
+    if (generation !== state.generation || state.selectedWallet !== wallet || !detectedWallets().includes(wallet)) throw new LocalizedError('errorAccountChangedSigning');
+    const signedTx = verifySignedTransaction(prepared, signedOutput, account.address);
+    state.submitted = true; updateButtons();
+    showStatus('statusSubmitting', 'submittingMessage');
+    const result = await api('/postClaim', { address: account.address, signedTx });
+    $('result').hidden = false;
+    setText('result-title', 'resultApiReturned');
+    $('result-json').textContent = JSON.stringify(result, null, 2);
+    const transactionId = result.transactionId ?? result.txid ?? result.signature;
+    if (typeof transactionId === 'string' && /^[1-9A-HJ-NP-Za-km-z]{80,100}$/.test(transactionId)) {
+      $('transaction-id').hidden = false; $('transaction-id').textContent = transactionId;
+      $('transaction-link').href = `https://solscan.io/tx/${encodeURIComponent(transactionId)}`;
+      $('transaction-link').hidden = false;
+      setText('result-title', 'resultVerifying');
+    }
+    setText('verification-status', 'verificationLoading');
+    try { await verifyStatus(); } catch (error) {
+      setText('verification-status', 'verificationFailed');
+      showStatus('statusSubmitReturned', 'submitReturnedMessage');
+    }
+  } catch (error) {
+    if (state.submitted) {
+      $('result').hidden = false; setText('result-title', 'resultCheckSubmission');
+      setText('result-json', () => localizedErrorMessage(error));
+      setText('verification-status', 'verificationNoResubmit');
+    }
+    throw error;
+  } finally { invalidatePrepared(); }
+}
+
+async function run(action) {
+  if (state.busy) return;
+  state.busy = true; updateButtons();
+  try { await action(); } catch (error) {
+    showStatus('statusIncomplete', () => localizedErrorMessage(error), 'error');
+  } finally { state.busy = false; updateButtons(); }
+}
+
+$('donation-address').textContent = DONATION_ADDRESS;
+$('copy-donation').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(DONATION_ADDRESS);
+    setText('donation-copy-status', 'donationCopied');
+  } catch {
+    setText('donation-copy-status', 'donationCopyFailed');
+  }
+});
+
+$('connect').addEventListener('click', () => run(connect));
+$('prepare').addEventListener('click', () => run(prepare));
+$('sign').addEventListener('click', () => run(signAndSubmit));
+$('refresh-status').addEventListener('click', () => run(verifyStatus));
+$('wallet-choice').addEventListener('change', () => {
+  if (state.busy || state.submitted) return;
+  const selected = state.availableWallets.find(wallet => walletId(wallet) === $('wallet-choice').value);
+  if (!selected || selected === state.selectedWallet) return;
+  state.selectedWallet = selected;
+  clearAccount('allocationWalletChanged');
+  showStatus('statusWalletChanged', 'walletSelectedMessage', '', { wallet: selected.name });
+});
+$('account-choice').addEventListener('change', () => {
+  const account = state.accounts.find(item => item.address === $('account-choice').value);
+  if (account) run(() => useAccount(account));
+});
+registry.on('register', updateDiscovery); registry.on('unregister', updateDiscovery);
+window.addEventListener('load', updateDiscovery, { once: true });
+let savedLanguage;
+try { savedLanguage = localStorage.getItem(STORAGE_KEY); } catch { /* Private browsing may block storage. */ }
+applyLanguage(chooseLanguage({ search: location.search, saved: savedLanguage, browserLanguage: navigator.language }));
+document.querySelectorAll('[data-language]').forEach(button => {
+  button.addEventListener('click', () => applyLanguage(button.dataset.language, true));
+});
+setInterval(updateFreshness, 1000);
+api().then(response => {
+  state.metadata = validateMetadata(response); renderMetadata(state.metadata); updateButtons();
+}).catch(error => {
+  setText('campaign-date', 'campaignUnavailable');
+  setText('compatibility', 'requirementsUnverified');
+  showStatus('statusLoadFailed', () => localizedErrorMessage(error), 'error');
+});

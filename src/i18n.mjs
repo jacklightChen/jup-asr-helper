@@ -1,0 +1,189 @@
+export const STORAGE_KEY = 'jup-asr-helper-language';
+export const translations = Object.freeze({
+  zh: Object.freeze({
+    donationEyebrow: '自愿支持', donationTitle: '支持这个工具',
+    donationDescription: '如果这个工具对你有帮助，欢迎自愿捐赠，支持开发。',
+    donationNetwork: 'Solana 捐款地址', copyDonation: '复制地址',
+    donationCopied: '地址已复制。', donationCopyFailed: '无法自动复制，请手动复制上方地址。',
+    pageTitle: 'JUP ASR · 钱包签名助手', mainnet: 'Solana 主网',
+    heroEyebrow: '社区接口领取助手', heroTitle1: '领取 ASR，', heroTitle2: '在钱包中确认。',
+    intro1: '支持 Binance Wallet 和 Phantom。', intro2: '连接、核对交易，再由你授权签名。',
+    campaignInfo: '活动信息', officialCampaign: '官方活动 ↗', rewardLabel: '可领取 · Staked JUP',
+    allocationInitial: '连接钱包后查询你的奖励。', campaignLoading: '正在读取官方领取时间…',
+    requirementsLoading: '正在读取活动要求…', claimSteps: '领取步骤', connectTitle: '连接钱包',
+    connectDescription: '选择要使用的 Solana 钱包账户。', detectingWallet: '检测钱包中…',
+    chooseAccount: '选择 Solana 账户', connectButton: '连接钱包', reconnectButton: '重新连接钱包',
+    prepareTitle: '准备领取交易', prepareDescription: '从 Jupiter 获取本次领取交易。',
+    prepareButton: '准备交易', reprepareButton: '重新准备交易', signTitle: '核对并签名',
+    signDescription: '签名授权会在所选钱包中弹出。', claimEffect: '领取结果', stakeDestination: '加入 JUP 质押账户',
+    networkLabel: '网络', transactionDetails: '查看完整交易信息', feePayer: '手续费付款账户',
+    programs: '调用程序', signers: '必要签名账户', transactionHash: '交易消息 SHA-256',
+    signButton: '在钱包中签名并提交', signNote: '提交前会检查签名与原交易一致。',
+    submissionResult: '提交结果', resultSubmitted: '交易已提交', viewTransaction: '查看链上交易 ↗',
+    refreshStatus: '查询领取状态', apiDetails: '接口返回详情',
+    footerCommunity: '社区开源助手，使用 Wallet Standard 和 Phantom 官方接口与 Jupiter 活动 API；与 Binance、Phantom 或 Jupiter 无隶属关系。',
+    footerPrivacy: '本页不会请求私钥或助记词。奖励由官方交易执行。', binanceDocs: 'Binance 接口文档 ↗', phantomDocs: 'Phantom 接口文档 ↗', openInPhantom: '在 Phantom 中打开 ↗', chooseWallet: '选择钱包',
+    walletDetected: '已检测到 {wallets}。', walletUnsupported: '当前环境没有支持 Solana 签名的 Binance Wallet 或 Phantom。请使用钱包的手机 DApp 浏览器，或安装 Phantom 浏览器扩展。',
+    walletBrowserRequired: '请在 Binance Wallet 或 Phantom 的手机 DApp 浏览器打开；桌面浏览器可使用 Phantom 扩展。',
+    errorSubmitUnknown: '提交结果暂时未知：网络请求未得到响应。请先查询领取状态，不要重复提交。',
+    errorApiRead: '无法读取 Jupiter API。请检查网络；如果持续失败，可能是该浏览器或网站访问受到限制。',
+    errorHttp: 'Jupiter HTTP {status}：{detail}', errorApiFormat: 'Jupiter 返回的数据格式无法识别。',
+    errorMetadata: '活动参数与已核实的 ASR 活动不一致。', claimWindow: '领取时间 {start} — {end}（Asia/Shanghai，UTC+8）',
+    compatibilityJupiterOnly: '手机 Binance Wallet 的 API 领取已于 2026-10-13 经用户实测成功；官方网站仍提示使用 Jupiter Wallet。此结果适用于本次 ASR 2026 Q3 活动。Phantom 已接入签名接口，领取尚未实测。',
+    compatibilityApi: '本页通过 Jupiter 活动 API 领取，最终结果以链上交易为准。',
+    errorStats: '无法核实当前地址的奖励数据。', allocationAvailable: '奖励将加入 JUP 质押账户。已领取 {amount} JUP。',
+    allocationClaimed: '已领取 {amount} JUP。', allocationNone: '当前地址没有可领取奖励。',
+    allocationLoading: '正在查询当前地址的奖励…', errorWalletMissing: '未检测到 Binance Wallet 或 Phantom 的 Solana 签名接口。请使用钱包 DApp 浏览器或 Phantom 扩展，并刷新页面。',
+    errorWalletSelection: '请先选择要连接的钱包。', errorWalletChanged: '所选钱包已改变或不可用，请重新连接。', allocationWalletChanged: '钱包选择已改变，请重新连接。', statusWalletChanged: '钱包已改变', walletSelectedMessage: '已选择 {wallet}。请连接钱包并重新准备交易。',
+    errorAccountUnavailable: '钱包没有授权可签名的 Solana 主网账户。请在所选钱包中选择 Solana 账户。',
+    allocationChanged: '钱包账户已改变，请重新连接。', statusAccountChanged: '账户已改变', reconnectPrepare: '请重新连接钱包并准备交易。',
+    statusConnected: '已连接', connectedMessage: '{wallet} 已连接，奖励信息已更新。', errorConnectFirst: '请先连接钱包。',
+    statusPreparing: '准备中', preparingMessage: '正在读取最新奖励并生成领取交易…', errorAccountChanged: '钱包账户发生变化，请重新连接。',
+    errorWindowClosed: '当前不在官方公布的领取时间内。', errorNoReward: '当前钱包没有可领取奖励。',
+    errorAccountChangedPrepare: '钱包账户发生变化，请重新准备。', errorTransactionVersion: '当前钱包不支持这笔领取交易的版本。',
+    errorAmountMismatch: '领取交易金额与最新奖励数据不一致，请重新查询。',
+    transactionMeta: '交易版本 {version} · {count} 条指令 · 无地址查找表',
+    createsEscrow: '本次会创建 JUP 质押账户。', enablesMaxLock: '本次会开启持续质押（max lock）。',
+    stakingEffect: '奖励进入质押账户；之后关闭持续质押并等待 7 天才可提取。',
+    costEstimate: '网络费估算 {fee} SOL；新增账户租金估算 {rent} SOL。合计约 {total} SOL，以钱包预览和实际交易为准。',
+    statusPrepared: '交易已准备', preparedMessage: '请核对持续质押与费用，再点击签名。所选钱包中的交易预览是最终确认步骤。',
+    freshnessRemaining: '请在 {seconds} 秒内发起签名。区块哈希有时效。', freshnessExpired: '准备已超过 45 秒，请重新准备交易后签名。',
+    verificationConfirmed: '官方奖励状态显示已领取 {amount} JUP，请在质押账户中查看。',
+    verificationPending: '官方状态仍显示可领取 {amount} JUP。状态更新可能延迟，可稍后再查询并检查链上交易。',
+    resultConfirmed: '领取状态已确认', statusClaimed: '已领取', claimedMessage: '官方奖励状态显示已领取 {amount} JUP。',
+    statusUpdated: '状态已更新', errorPrepareAgain: '请重新准备交易后签名。',
+    statusAuthorization: '等待钱包授权', authorizationMessage: '请在 {wallet} 中核对账户、持续质押操作和费用，然后确认交易。',
+    errorOutputCount: '钱包返回的交易数量异常。', errorAccountChangedSigning: '钱包账户在签名过程中改变，未提交。',
+    statusSubmitting: '正在提交', submittingMessage: '签名已核验，正在提交给 Jupiter。请保持页面打开。',
+    resultApiReturned: 'Jupiter 接口已返回', resultVerifying: '交易已提交，正在核实', verificationLoading: '正在重新查询官方奖励状态…',
+    verificationFailed: '状态查询暂时失败，请点击下方按钮重新查询。', statusSubmitReturned: '提交已返回',
+    submitReturnedMessage: '请查看接口返回与链上交易，并重新查询领取状态。', resultCheckSubmission: '请核实提交结果',
+    verificationNoResubmit: '本页不会自动重复提交。请先查询官方奖励状态，再检查钱包交易记录。',
+    statusIncomplete: '操作未完成', errorWalletCancelled: '钱包取消了本次操作，请按页面状态继续。',
+    campaignUnavailable: '活动时间暂时无法读取。', requirementsUnverified: '活动信息未核实，签名暂不可用。', statusLoadFailed: '读取失败',
+    errorUnknownValidation: '交易核验失败，已停止。{detail}',
+  }),
+  en: Object.freeze({
+    donationEyebrow: 'OPTIONAL SUPPORT', donationTitle: 'Support this helper',
+    donationDescription: 'If this helper was useful, you can support its development with a voluntary donation.',
+    donationNetwork: 'Solana donation address', copyDonation: 'Copy address',
+    donationCopied: 'Address copied.', donationCopyFailed: 'Automatic copying is unavailable. Copy the address above manually.',
+    pageTitle: 'JUP ASR · Wallet Signing Helper', mainnet: 'Solana Mainnet',
+    heroEyebrow: 'COMMUNITY CLAIM HELPER', heroTitle1: 'Claim ASR.', heroTitle2: 'Confirm in your wallet.',
+    intro1: 'Supports Binance Wallet and Phantom.', intro2: 'Connect, review the transaction, then authorize signing.',
+    campaignInfo: 'Campaign information', officialCampaign: 'Official campaign ↗', rewardLabel: 'Available · Staked JUP',
+    allocationInitial: 'Connect your wallet to check your reward.', campaignLoading: 'Loading the official claim window…',
+    requirementsLoading: 'Loading campaign requirements…', claimSteps: 'Claim steps', connectTitle: 'Connect your wallet',
+    connectDescription: 'Select the Solana wallet account you want to use.', detectingWallet: 'Detecting wallet…',
+    chooseAccount: 'Select a Solana account', connectButton: 'Connect wallet', reconnectButton: 'Reconnect wallet',
+    prepareTitle: 'Prepare claim transaction', prepareDescription: 'Fetch this campaign’s claim transaction from Jupiter.',
+    prepareButton: 'Prepare transaction', reprepareButton: 'Prepare a new transaction', signTitle: 'Review and sign',
+    signDescription: 'The selected wallet will ask you to authorize signing.', claimEffect: 'Claim result', stakeDestination: 'Added to your JUP staking account',
+    networkLabel: 'Network', transactionDetails: 'View full transaction details', feePayer: 'Fee-paying account',
+    programs: 'Invoked programs', signers: 'Required signing accounts', transactionHash: 'Transaction message SHA-256',
+    signButton: 'Sign and submit in your wallet', signNote: 'The signature and original transaction are checked before submission.',
+    submissionResult: 'SUBMISSION RESULT', resultSubmitted: 'Transaction submitted', viewTransaction: 'View on-chain transaction ↗',
+    refreshStatus: 'Check claim status', apiDetails: 'API response details',
+    footerCommunity: 'An open-source community helper using Wallet Standard, Phantom’s official provider and the Jupiter campaign API. Not affiliated with Binance, Phantom or Jupiter.',
+    footerPrivacy: 'This page never asks for a private key or recovery phrase. The official transaction executes the reward claim.', binanceDocs: 'Binance API docs ↗', phantomDocs: 'Phantom API docs ↗', openInPhantom: 'Open in Phantom ↗', chooseWallet: 'Select a wallet',
+    walletDetected: 'Detected {wallets}.', walletUnsupported: 'No Binance Wallet or Phantom with Solana signing is available here. Use a mobile wallet DApp browser or install the Phantom browser extension.',
+    walletBrowserRequired: 'Open in Binance Wallet’s or Phantom’s mobile DApp browser. On desktop, use the Phantom browser extension.',
+    errorSubmitUnknown: 'Submission status is unknown: the network request received no response. Check claim status before submitting again.',
+    errorApiRead: 'Cannot read the Jupiter API. Check your network. If the issue persists, this browser or website may be restricted.',
+    errorHttp: 'Jupiter HTTP {status}: {detail}', errorApiFormat: 'The Jupiter response format could not be recognized.',
+    errorMetadata: 'Campaign parameters do not match the verified ASR campaign.', claimWindow: 'Claim window: {start} — {end} (Asia/Shanghai, UTC+8)',
+    compatibilityJupiterOnly: 'A user successfully tested the API claim with mobile Binance Wallet on 2026-10-13. The official website still requests Jupiter Wallet. This result applies to ASR 2026 Q3. Phantom signing is integrated; a live claim has not yet been tested.',
+    compatibilityApi: 'This page uses the Jupiter campaign API. The on-chain transaction determines the final result.',
+    errorStats: 'The reward data for this address could not be verified.', allocationAvailable: 'The reward will be added to your JUP staking account. Already claimed: {amount} JUP.',
+    allocationClaimed: 'Already claimed: {amount} JUP.', allocationNone: 'No reward is available for this address.',
+    allocationLoading: 'Checking the reward for this address…', errorWalletMissing: 'No Binance Wallet or Phantom Solana signing interface was detected. Use a wallet DApp browser or Phantom extension, then refresh this page.',
+    errorWalletSelection: 'Select the wallet you want to connect first.', errorWalletChanged: 'The selected wallet changed or is unavailable. Please reconnect.', allocationWalletChanged: 'Your selected wallet changed. Please reconnect.', statusWalletChanged: 'Wallet changed', walletSelectedMessage: '{wallet} selected. Connect it and prepare a new transaction.',
+    errorAccountUnavailable: 'The wallet has not authorized a Solana mainnet account that can sign transactions. Select a Solana account in your chosen wallet.',
+    allocationChanged: 'Your wallet account changed. Please reconnect.', statusAccountChanged: 'Account changed', reconnectPrepare: 'Reconnect your wallet and prepare a new transaction.',
+    statusConnected: 'Connected', connectedMessage: '{wallet} connected. Reward information is up to date.', errorConnectFirst: 'Connect your wallet first.',
+    statusPreparing: 'Preparing', preparingMessage: 'Fetching the latest reward and generating a claim transaction…', errorAccountChanged: 'Your wallet account changed. Please reconnect.',
+    errorWindowClosed: 'The official claim window is currently closed.', errorNoReward: 'No reward is available for this wallet.',
+    errorAccountChangedPrepare: 'Your wallet account changed. Prepare a new transaction.', errorTransactionVersion: 'This wallet does not support the claim transaction version.',
+    errorAmountMismatch: 'The claim amount does not match the latest reward data. Check your reward again.',
+    transactionMeta: 'Transaction version {version} · {count} instructions · No address lookup tables',
+    createsEscrow: 'This transaction creates a JUP staking account. ', enablesMaxLock: 'This transaction enables continuous staking (max lock). ',
+    stakingEffect: 'The reward goes into your staking account. To withdraw later, disable continuous staking and wait through the 7-day cooldown.',
+    costEstimate: 'Estimated network fee: {fee} SOL; estimated rent for new accounts: {rent} SOL. Approximate total: {total} SOL. Check the wallet preview and actual transaction for final costs.',
+    statusPrepared: 'Transaction ready', preparedMessage: 'Review continuous staking and costs, then sign. The transaction preview in your selected wallet is the final confirmation step.',
+    freshnessRemaining: 'Start signing within {seconds} seconds. The blockhash expires.', freshnessExpired: 'More than 45 seconds have passed. Prepare a new transaction before signing.',
+    verificationConfirmed: 'The official reward status shows {amount} JUP claimed. Check your staking account.',
+    verificationPending: 'The official status still shows {amount} JUP available. Updates may be delayed. Check again later and inspect the on-chain transaction.',
+    resultConfirmed: 'Claim status confirmed', statusClaimed: 'Claimed', claimedMessage: 'The official reward status shows {amount} JUP claimed.',
+    statusUpdated: 'Status updated', errorPrepareAgain: 'Prepare a new transaction before signing.',
+    statusAuthorization: 'Waiting for wallet authorization', authorizationMessage: 'Review the account, continuous staking operation and costs in {wallet}, then confirm the transaction.',
+    errorOutputCount: 'The wallet returned an unexpected number of transactions.', errorAccountChangedSigning: 'Your wallet account changed while signing. Nothing was submitted.',
+    statusSubmitting: 'Submitting', submittingMessage: 'The signature was verified. Submitting to Jupiter. Keep this page open.',
+    resultApiReturned: 'Jupiter API responded', resultVerifying: 'Transaction submitted; checking status', verificationLoading: 'Checking the official reward status again…',
+    verificationFailed: 'The status check failed temporarily. Use the button below to try again.', statusSubmitReturned: 'Submission response received',
+    submitReturnedMessage: 'Review the API response and on-chain transaction, then check claim status again.', resultCheckSubmission: 'Verify the submission result',
+    verificationNoResubmit: 'This page will not automatically submit again. Check the official reward status and then your wallet’s transaction history.',
+    statusIncomplete: 'Action incomplete', errorWalletCancelled: 'The wallet cancelled this action. Continue according to the page status.',
+    campaignUnavailable: 'The claim window could not be loaded.', requirementsUnverified: 'Campaign information is unverified. Signing is unavailable.', statusLoadFailed: 'Load failed',
+    errorUnknownValidation: 'Transaction verification failed. Stopped. {detail}',
+  }),
+});
+
+export function chooseLanguage({ search = '', saved, browserLanguage = 'en' } = {}) {
+  const requested = new URLSearchParams(search).get('lang');
+  if (requested === 'zh' || requested === 'en') return requested;
+  if (saved === 'zh' || saved === 'en') return saved;
+  return /^zh(?:-|$)/i.test(browserLanguage) ? 'zh' : 'en';
+}
+let language = 'en';
+export const getLanguage = () => language;
+export const getLocale = () => language === 'zh' ? 'zh-CN' : 'en-US';
+export function setLanguage(value) {
+  if (value !== 'zh' && value !== 'en') throw new Error('Unsupported language');
+  language = value;
+}
+export function translate(key, values = {}, selectedLanguage = language) {
+  const message = translations[selectedLanguage]?.[key];
+  if (message === undefined) throw new Error(`Missing translation: ${selectedLanguage}.${key}`);
+  return message.replace(/\{([a-zA-Z]+)\}/g, (_, name) => String(values[name] ?? `{${name}}`));
+}
+export class LocalizedError extends Error {
+  constructor(key, values = {}) { super(translate(key, values)); this.key = key; this.values = values; }
+}
+
+// Map verifier errors without changing the security-sensitive transaction module.
+export const transactionErrorTranslations = Object.freeze({
+  '当前领取交易包含未核实的地址查找表，已停止。': 'The claim transaction contains unverified address lookup tables. Stopped.',
+  '当前领取交易的签名或手续费账户与钱包不一致，已停止。': 'The claim transaction’s signer or fee payer does not match your wallet. Stopped.',
+  '交易包含未核实的程序，已停止。': 'The transaction contains an unverified program. Stopped.',
+  '交易包含重复指令，已停止。': 'The transaction contains duplicate instructions. Stopped.',
+  '计算预算指令位置异常，已停止。': 'Compute budget instructions are in an unexpected position. Stopped.',
+  '计算预算账户异常，已停止。': 'The compute budget accounts are unexpected. Stopped.',
+  '交易计算额度异常，已停止。': 'The transaction compute unit limit is unexpected. Stopped.',
+  '未识别的计算预算指令，已停止。': 'Unrecognized compute budget instruction. Stopped.',
+  '创建质押账户的交易参数异常，已停止。': 'The staking account creation parameters are unexpected. Stopped.',
+  '持续质押的交易参数异常，已停止。': 'The continuous staking parameters are unexpected. Stopped.',
+  '领取指令结构异常，已停止。': 'The claim instruction structure is unexpected. Stopped.',
+  '领取证明结构异常，已停止。': 'The claim proof structure is unexpected. Stopped.',
+  '领取账户与当前钱包或活动不一致，已停止。': 'The claim accounts do not match your wallet or the current campaign. Stopped.',
+  '交易包含未识别的领取操作，已停止。': 'The transaction contains an unrecognized claim operation. Stopped.',
+  '交易没有领取并质押指令，已停止。': 'The transaction has no claim-and-stake instruction. Stopped.',
+  '预估网络费超过 0.01 SOL，已停止。': 'The estimated network fee exceeds 0.01 SOL. Stopped.',
+  'Jupiter 没有返回有效交易。': 'Jupiter did not return a valid transaction.',
+  '交易大小异常，已停止。': 'The transaction size is unexpected. Stopped.',
+  '交易编码不一致，已停止。': 'The transaction encoding is inconsistent. Stopped.',
+  '钱包地址无效。': 'The wallet address is invalid.',
+  '当前钱包不是这笔领取交易的签名账户，已停止。': 'This wallet is not a signing account for the claim transaction. Stopped.',
+  '交易使用未解析的程序地址，无法核对，已停止。': 'The transaction uses an unresolved program address and cannot be verified. Stopped.',
+  '钱包没有返回完整的已签名交易。': 'The wallet did not return a complete signed transaction.',
+  '钱包返回的交易内容发生变化，未提交。请重新准备交易。': 'The wallet changed the transaction content. Nothing was submitted. Prepare a new transaction.',
+  '钱包返回的签名数量异常，未提交。': 'The wallet returned an unexpected number of signatures. Nothing was submitted.',
+  '钱包改变了交易中已有的其他签名，未提交。': 'The wallet changed an existing signature in the transaction. Nothing was submitted.',
+  '钱包签名与当前地址或交易不匹配，未提交。': 'The wallet signature does not match this address or transaction. Nothing was submitted.',
+});
+export function localizedErrorMessage(error, selectedLanguage = language) {
+  if (error instanceof LocalizedError) return translate(error.key, error.values, selectedLanguage);
+  const message = error?.message;
+  if (!message) return translate('errorWalletCancelled', {}, selectedLanguage);
+  if (selectedLanguage === 'en' && transactionErrorTranslations[message]) return transactionErrorTranslations[message];
+  return String(message);
+}

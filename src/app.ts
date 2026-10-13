@@ -134,6 +134,7 @@ function clearAccount(allocationKey: MessageKey = 'allocationInitial') {
   state.generation++;
   state.unsubscribe?.(); state.unsubscribe = null;
   state.wallet = null; state.account = null; state.accounts = []; state.stats = null;
+  $('claimed-staking').hidden = true; $('result-staking-link').hidden = true;
   invalidatePrepared();
   $('account-info').hidden = true; $('account-choice-wrap').hidden = true;
   $('account-choice').replaceChildren();
@@ -250,6 +251,8 @@ function renderStats(stats: RewardStats) {
   $('amount').textContent = formatAmount(stats.unclaimedAmount);
   setText('allocation-status', () => t(stats.unclaimedAmount > 0 ? 'allocationAvailable' :
     stats.claimedAmount > 0 ? 'allocationClaimed' : 'allocationNone', { amount: formatAmount(stats.claimedAmount) }));
+  const claimed = stats.unclaimedAmount === 0 && stats.claimedAmount > 0;
+  $('claimed-staking').hidden = !claimed; $('result-staking-link').hidden = !claimed;
   updateButtons();
 }
 
@@ -264,6 +267,7 @@ async function useAccount(account: WalletAccount) {
   if (!state.wallet) throw new LocalizedError('errorConnectFirst');
   const generation = ++state.generation;
   state.account = account; state.stats = null;
+  $('claimed-staking').hidden = true; $('result-staking-link').hidden = true;
   invalidatePrepared();
   $('amount').textContent = '—';
   setText('allocation-status', 'allocationLoading');

@@ -25,6 +25,7 @@
       <div class="reward-label" data-i18n="rewardLabel">可领取 · Staked JUP</div>
       <div class="reward"><span id="amount">—</span><small>JUP</small></div>
       <p id="allocation-status" class="muted" data-i18n="allocationInitial">连接钱包后查询你的奖励。</p>
+      <div id="claimed-staking" class="notice" hidden><span data-i18n="claimedStakeNote">领取的 JUP 已自动质押锁仓。请连接同一钱包查看质押余额。</span> <a href="https://vote.jup.ag/" target="_blank" rel="noopener noreferrer" data-i18n="viewStaking">在 vote.jup.ag 查看质押 ↗</a></div>
       <div class="divider"></div>
       <p id="campaign-date" class="micro" data-i18n="campaignLoading">正在读取官方领取时间…</p>
       <p id="compatibility" class="notice" hidden></p>
@@ -63,6 +64,7 @@
       <a id="transaction-link" data-i18n="viewTransaction" target="_blank" rel="noopener noreferrer" hidden>查看链上交易 ↗</a>
       <code id="transaction-id" hidden></code>
       <p id="verification-status" class="muted"></p>
+      <a id="result-staking-link" href="https://vote.jup.ag/" target="_blank" rel="noopener noreferrer" data-i18n="viewStaking" hidden>在 vote.jup.ag 查看质押 ↗</a>
       <button id="refresh-status" class="button secondary" data-i18n="refreshStatus">查询领取状态</button>
       <details><summary data-i18n="apiDetails">接口返回详情</summary><pre id="result-json"></pre></details>
     </section>
